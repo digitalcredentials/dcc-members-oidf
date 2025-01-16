@@ -28,7 +28,7 @@ const options = {
 
 // Trust anchor well-known endpoint
 app.get(`/${TRUST_ANCHOR_NAME}/.well-known/openid-federation`, (req, res) => {
-  res.send(); // Respond with 'a'
+  res.send();
 });
 
 
@@ -37,7 +37,7 @@ app.get(`/${TRUST_ANCHOR_NAME}/.well-known/openid-federation`, (req, res) => {
 
 // Health check endpoint for pre-testing purposes
 app.get(`/health`, (req, res) => {
-  res.send(); // Respond with 'a'
+  res.send("Success"); // Respond with 'a'
 });
 
 // Start the server with HTTPS
