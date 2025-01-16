@@ -1,0 +1,29 @@
+name: Run API Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  ui_tests:
+    name: Run API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Build and Run App
+        run: |
+          node index.js
+      - name: Install Newman
+        run: npm install -g newman
+      - name: Run API tests
+        run: newman run ./tests/DCC_OIDF.postman_collection.json --insecure
