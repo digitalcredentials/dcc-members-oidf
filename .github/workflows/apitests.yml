@@ -25,12 +25,26 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build and Run App
+      - name: Start App
+        run: node index.js &
+        env:
+          NODE_ENV: production
+
+      - name: Wait for App to Start
         run: |
-          node index.js
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:3000/health; then
+              echo "App is up and running!"
+              exit 0
+            fi
+            echo "Waiting for app to start..."
+            sleep 2
+          done
+          echo "App failed to start in time."
+          exit 1
 
       - name: Install Newman
         run: npm install -g newman
 
-      - name: Run API tests
+      - name: Run API Tests
         run: newman run ./tests/DCC_OIDF.postman_collection.json --insecure

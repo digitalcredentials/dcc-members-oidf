@@ -14,6 +14,11 @@ numbers.forEach((num) => {
   });
 });
 
+
+app.get(`/health`, (req, res) => {
+  res.send(); // Respond with 'a'
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}.`);
