@@ -33,7 +33,7 @@ jobs:
       - name: Wait for App to Start
         run: |
           for i in {1..30}; do
-            if curl --silent --fail http://localhost:3000/health; then
+            if curl --silent --fail https://localhost:3000/health; then
               echo "App is up and running!"
               exit 0
             fi
