@@ -1,0 +1,74 @@
+{
+	"info": {
+		"_postman_id": "63290bb1-3dfe-4af9-969a-c34d8595b216",
+		"name": "DCC_OIDF",
+		"description": "**OpenID Spec:** [<b>“Set up web services that can publish signed Entity Statements, one for the URL corresponding to the federation's Entity Identifier returning an Entity Configuration”</b>](https://openid.net/specs/openid-federation-1_0.html#name-setting-up-a-federation)\n\n- **This endpoint is used to get detailed metadata for the trust anchor**",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32752644"
+	},
+	"item": [
+		{
+			"name": "Trust Anchor Entity Configuration returns valid JSON",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response status code is 200\", function () {\r",
+							"    pm.expect(pm.response.code).to.equal(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{TEST_URL}}/issuer-registry/.well-known/openid-federation",
+					"host": [
+						"{{TEST_URL}}"
+					],
+					"path": [
+						"issuer-registry",
+						".well-known",
+						"openid-federation"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "TEST_URL",
+			"value": "https://localhost:3000",
+			"type": "string"
+		}
+	]
+}
