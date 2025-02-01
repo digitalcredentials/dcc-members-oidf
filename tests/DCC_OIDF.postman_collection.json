@@ -8,38 +8,197 @@
 	},
 	"item": [
 		{
-			"name": "Trust Anchor Entity Configuration returns valid JSON",
-			"event": [
+			"name": "test_existence_mvp_endpoints",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Response status code is 200\", function () {\r",
-							"    pm.expect(pm.response.code).to.equal(200);\r",
-							"});\r",
-							""
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{TEST_URL}}/issuer-registry/.well-known/openid-federation",
-					"host": [
-						"{{TEST_URL}}"
+					"name": "Trust Anchor Entity Configuration returns Status 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
 					],
-					"path": [
-						"issuer-registry",
-						".well-known",
-						"openid-federation"
-					]
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/.well-known/openid-federation",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{TRUST_ANCHOR_NAME}}",
+								".well-known",
+								"openid-federation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Successful Federation Fetch returns status 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{TRUST_ANCHOR_NAME}}",
+								"fetch"
+							],
+							"query": [
+								{
+									"key": "sub",
+									"value": "{{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unsuccessful Federation Fetch returns status 404 and {}",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Content is an empty object\", function () {\r",
+									"    pm.expect(pm.response.json()).to.eql({});\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/NONEXISTENT_ISSUER",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{TRUST_ANCHOR_NAME}}",
+								"fetch"
+							],
+							"query": [
+								{
+									"key": "sub",
+									"value": "{{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/NONEXISTENT_ISSUER"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trust Anchor Subordinate Listing returns 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/subordinate_listing",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{TRUST_ANCHOR_NAME}}",
+								"subordinate_listing"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Successful internally hosted endpoint returns 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}/.well-known/openid-federation",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{ISSUERS_SUBFOLDER_NAME}}",
+								"{{TEST_ISSUER}}",
+								".well-known",
+								"openid-federation"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
+		},
+		{
+			"name": "test_existence_did_trust_mark_search_endpoints",
+			"item": []
 		}
 	],
 	"event": [
@@ -68,6 +227,26 @@
 		{
 			"key": "TEST_URL",
 			"value": "https://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "THIS_URL",
+			"value": "https://sandbox123123.example.com",
+			"type": "string"
+		},
+		{
+			"key": "TRUST_ANCHOR_NAME",
+			"value": "issuer-registry",
+			"type": "string"
+		},
+		{
+			"key": "ISSUERS_SUBFOLDER_NAME",
+			"value": "issuers",
+			"type": "string"
+		},
+		{
+			"key": "TEST_ISSUER",
+			"value": "oneuni",
 			"type": "string"
 		}
 	]

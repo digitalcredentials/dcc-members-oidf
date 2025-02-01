@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\"",
-    "builddb": "rm entities.db; sqlite3 entities.db < schema.sql"
-    
+    "builddb": "rm issuerreg.db; sqlite3 issuerreg.db < schema.sql",
+    "loadtestdata": "sqlite3 issuerreg.db \"PRAGMA foreign_keys = OFF; BEGIN TRANSACTION; SELECT 'DELETE FROM ' || name || ';' FROM sqlite_master WHERE type='table';\" | sqlite3 issuerreg.db; sqlite3 issuerreg.db \"PRAGMA foreign_keys = ON;\" && sqlite3 issuerreg.db < testdata.sql",    "webservice" : "node index.js"
   },
   "keywords": [],
   "author": "",
