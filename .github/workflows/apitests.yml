@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Keygen
+        run: npm run keygen
+
       - name: Start App
         run: node index.js &
         env:
