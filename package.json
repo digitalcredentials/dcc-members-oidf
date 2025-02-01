@@ -4,7 +4,8 @@
   "description": "## Description:",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\""
   },
   "keywords": [],
   "author": "",
