@@ -8,7 +8,7 @@
 	},
 	"item": [
 		{
-			"name": "test_existence_all_endpoints",
+			"name": "test_existence_mvp_endpoints",
 			"item": [
 				{
 					"name": "Trust Anchor Entity Configuration returns Status 200",
@@ -90,8 +90,12 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Response status code is 200\", function () {\r",
-									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Content is an empty object\", function () {\r",
+									"    pm.expect(pm.response.json()).to.eql({});\r",
 									"});\r",
 									""
 								],
@@ -191,6 +195,10 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "test_existence_did_trust_mark_search_endpoints",
+			"item": []
 		}
 	],
 	"event": [
@@ -238,7 +246,7 @@
 		},
 		{
 			"key": "TEST_ISSUER",
-			"value": "issuer1",
+			"value": "oneuni",
 			"type": "string"
 		}
 	]

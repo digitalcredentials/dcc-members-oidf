@@ -31,7 +31,7 @@ CREATE TABLE issuer_private_keys (
     sub_name_internal_key_id INTEGER NOT NULL,
     p TEXT NOT NULL,
     PRIMARY KEY (sub_name, sub_name_internal_key_id),
-    FOREIGN KEY (sub_name, sub_name_internal_key_id) REFERENCES internal_public_keys(sub_name, sub_name_internal_key_id) ON DELETE CASCADE
+    FOREIGN KEY (sub_name, sub_name_internal_key_id) REFERENCES issuer_public_keys(sub_name, sub_name_internal_key_id) ON DELETE CASCADE
 );
 
 
@@ -50,3 +50,7 @@ CREATE TABLE registry_private_keys (
     PRIMARY KEY (this_key_id),
     FOREIGN KEY (this_key_id) REFERENCES registry_public_keys(this_key_id) ON DELETE CASCADE
 );
+
+
+PRAGMA foreign_keys = ON;
+

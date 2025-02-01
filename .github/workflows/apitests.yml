@@ -28,6 +28,12 @@ jobs:
       - name: Keygen
         run: npm run keygen
 
+      - name: Set up DB
+        run: npm run builddb
+
+      - name: Load test data
+        run: npm run loadtestdata
+
       - name: Start App
         run: node index.js &
         env:
@@ -36,7 +42,7 @@ jobs:
       - name: Wait for App to Start
         run: |
           for i in {1..30}; do
-            if curl --silent --fail -k https://localhost:3000/health; then
+            if curl --silent --fail -k https://localhost:3000/issuer-registry/.well-known/openid-federation; then
               echo "App is up and running!"
               exit 0
             fi
