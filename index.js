@@ -15,15 +15,6 @@ const options = {
 };
 
 
-// // The array of numbers
-// const numbers = [1, 2, 13];
-
-// // Dynamically create endpoints for each number
-// numbers.forEach((num) => {
-//   app.get(`/test${num}`, (req, res) => {
-//     res.send('a'); // Respond with 'a'
-//   });
-// });
 
 
 // Trust anchor well-known endpoint
