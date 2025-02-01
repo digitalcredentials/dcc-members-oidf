@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\"",
     "builddb": "rm entities.db; sqlite3 entities.db < schema.sql",
+    "loadtestdata": "sqlite3 entities.db < testdata.sql",
     "webservice" : "node index.js"
     
   },

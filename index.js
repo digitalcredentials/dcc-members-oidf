@@ -9,6 +9,8 @@ const port = process.env.PORT || 3000;
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
 const THIS_URL = "https://sandbox123123.example.com"; // For determining internal path for fetch statement
+const JWKS_KTY = "EC"
+const JWKS_CURVE = "P-256"
 
 // SSL/TLS certificates
 const options = {
@@ -17,8 +19,10 @@ const options = {
 };
 
 // Startup checks:
-// Get most recent JWKs from external sources
-// Ensure that all private keys and public keys actually match
+// TODO: Get most recent JWKs from external sources
+// TODO: Ensure that all private keys and public keys actually match
+
+// TODO: add functionality to convert PNG to base64
 
 
 
@@ -27,9 +31,6 @@ const options = {
 app.get(`/${TRUST_ANCHOR_NAME}/.well-known/openid-federation`, (req, res) => {
   res.send();
 });
-
-
-
 
 
 // Health check endpoint for pre-testing purposes
