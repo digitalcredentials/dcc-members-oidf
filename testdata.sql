@@ -14,24 +14,24 @@ VALUES
 -- Insert into issuer_public_keys
 INSERT INTO issuer_public_keys (sub_name, key_id, x, y)
 VALUES 
-    ('https://testorganization.example.com/issuers/oneuni', 'abc1', 'tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og', 'gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4'),  -- Internally hosted key
-    ('https://twotraining.com/it-services', '45fa', 'k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A', 'MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk'),  -- Externally hosted key (key_id is NULL)
-    ('https://testorganization.example.com/issuers/threetech', '2abb', 'VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s', 'HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg');  -- Internally hosted key
+    ('https://testorganization.example.com/issuers/oneuni', 'oneuni-key1', 'tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og', 'gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4'),  -- Internally hosted key
+    ('https://twotraining.com/it-services', 'twotraining-key1', 'k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A', 'MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk'),  -- Externally hosted key (key_id is NULL)
+    ('https://testorganization.example.com/issuers/threetech', 'threetech-key1', 'VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s', 'HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg');  -- Internally hosted key
 
 
 -- Insert into issuer_private_keys (only for internally hosted keys)
 INSERT INTO issuer_private_keys (sub_name, key_id, d)
 VALUES 
-    ('https://testorganization.example.com/issuers/oneuni', 'abc1', 'aniEY5Xk4i1221C1cCmnhQOX1F94xTlMjdfapQ9VHg4'),
-    ('https://testorganization.example.com/issuers/threetech', '2abb', 'nd4N8us_xrKbvISGBn6rMe9pqXXsiFtEUsaXF3jNkx8');
+    ('https://testorganization.example.com/issuers/oneuni', 'oneuni-key1', 'aniEY5Xk4i1221C1cCmnhQOX1F94xTlMjdfapQ9VHg4'),
+    ('https://testorganization.example.com/issuers/threetech', 'threetech-key1', 'nd4N8us_xrKbvISGBn6rMe9pqXXsiFtEUsaXF3jNkx8');
 
 
 -- Insert into registry_public_keys
-INSERT INTO registry_public_keys (this_key_id, x, y)
+INSERT INTO registry_public_keys (key_id, x, y)
 VALUES 
-    ('91aaa', 'Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs', 'J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY');
+    ('issuerregistry-key1', 'Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs', 'J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY');
 
 -- Insert into registry_private_keys
-INSERT INTO registry_private_keys (this_key_id, d)
+INSERT INTO registry_private_keys (key_id, d)
 VALUES 
-    ('91aaa', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
+    ('issuerregistry-key1', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');

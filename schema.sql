@@ -40,18 +40,18 @@ CREATE TABLE issuer_private_keys (
 
 -- Table for all trust registry public keys. At the moment, only supports ECC P-256.
 CREATE TABLE registry_public_keys (
-    this_key_id TEXT NOT NULL,
+    key_id TEXT NOT NULL,
     x TEXT NOT NULL,
     y TEXT NOT NULL,
-    PRIMARY KEY (this_key_id)
+    PRIMARY KEY (key_id)
 );
 
 -- Table for all trust registry private keys
 CREATE TABLE registry_private_keys (
-    this_key_id TEXT NOT NULL,
+    key_id TEXT NOT NULL,
     d TEXT NOT NULL,
-    PRIMARY KEY (this_key_id),
-    FOREIGN KEY (this_key_id) REFERENCES registry_public_keys(this_key_id) ON DELETE CASCADE
+    PRIMARY KEY (key_id),
+    FOREIGN KEY (key_id) REFERENCES registry_public_keys(key_id) ON DELETE CASCADE
 );
 
 
