@@ -12,43 +12,46 @@ CREATE TABLE issuers (
         (did IS NOT NULL AND did_signed_sub_statement IS NOT NULL) OR
         (did IS NULL AND did_signed_sub_statement IS NULL)
     )
+
 );
 
 -- Table for all issuer public keys stored in the registry. At the moment, only supports ECC P-256.
--- If sub_name_internal_key_id is NULL, then the key is externally hosted.
 CREATE TABLE issuer_public_keys (
     sub_name TEXT NOT NULL,
-    sub_name_internal_key_id INTEGER,
+    key_id TEXT NOT NULL,
     x TEXT NOT NULL,
     y TEXT NOT NULL,
-    PRIMARY KEY (sub_name, sub_name_internal_key_id),
+    PRIMARY KEY (sub_name, key_id),
     FOREIGN KEY (sub_name) REFERENCES issuers(sub_name) ON DELETE CASCADE
 );
 
 -- Internally hosted private keys
+-- Constraint: if sub_name starts with "https://testorganization.example.com/" then the private key can be hosted
+-- (can't host other people's private keys)
 CREATE TABLE issuer_private_keys (
     sub_name TEXT NOT NULL,
-    sub_name_internal_key_id INTEGER NOT NULL,
-    p TEXT NOT NULL,
-    PRIMARY KEY (sub_name, sub_name_internal_key_id),
-    FOREIGN KEY (sub_name, sub_name_internal_key_id) REFERENCES issuer_public_keys(sub_name, sub_name_internal_key_id) ON DELETE CASCADE
+    key_id TEXT NOT NULL,
+    d TEXT NOT NULL,
+    PRIMARY KEY (sub_name, key_id),
+    FOREIGN KEY (sub_name, key_id) REFERENCES issuer_public_keys(sub_name, key_id) ON DELETE CASCADE
+    CONSTRAINT only_host_our_own_PKs CHECK (sub_name LIKE 'https://testorganization.example.com/%')
 );
 
 
 -- Table for all trust registry public keys. At the moment, only supports ECC P-256.
 CREATE TABLE registry_public_keys (
-    this_key_id INTEGER NOT NULL,
+    key_id TEXT NOT NULL,
     x TEXT NOT NULL,
     y TEXT NOT NULL,
-    PRIMARY KEY (this_key_id)
+    PRIMARY KEY (key_id)
 );
 
 -- Table for all trust registry private keys
 CREATE TABLE registry_private_keys (
-    this_key_id INTEGER NOT NULL,
-    p TEXT NOT NULL,
-    PRIMARY KEY (this_key_id),
-    FOREIGN KEY (this_key_id) REFERENCES registry_public_keys(this_key_id) ON DELETE CASCADE
+    key_id TEXT NOT NULL,
+    d TEXT NOT NULL,
+    PRIMARY KEY (key_id),
+    FOREIGN KEY (key_id) REFERENCES registry_public_keys(key_id) ON DELETE CASCADE
 );
 
 
