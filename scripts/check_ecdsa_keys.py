@@ -3,7 +3,7 @@ import argparse
 import fastecdsa.keys
 import fastecdsa.curve
 
-# example: python3 ../test.py tzWTn7F1acOdsPwvAsQEp1UMmGwUS33G9BVMsbNhrX0 qvQp4kssA1orZnRwCNO36ErC3U6fQySVchtQ5ZbsU48 eG_8qDxeagabYrI6VIpK6gPiQN8Mm5aY1psMvKjmQQQ
+# example: python3 ./test.py tzWTn7F1acOdsPwvAsQEp1UMmGwUS33G9BVMsbNhrX0 qvQp4kssA1orZnRwCNO36ErC3U6fQySVchtQ5ZbsU48 eG_8qDxeagabYrI6VIpK6gPiQN8Mm5aY1psMvKjmQQQ
 # checks to see if argument A (private key, base64URL encoded), matches argument B and C (x and y values for ECDSA)
 
 def check_key_match(privatekey_b64url, x_b64url, y_b64url):

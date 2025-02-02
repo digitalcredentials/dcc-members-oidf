@@ -1,6 +1,8 @@
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+const jose = require('jose');
+const { sign } = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
@@ -8,16 +10,113 @@ const port = process.env.PORT || 3000;
 
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
-const THIS_URL = "https://sandbox123123.example.com"; // For determining internal path for fetch statement
+const THIS_URL = "https://testorganization.example.com"; // For determining internal path for fetch statement (before issuers subfolder)
 const JWKS_KTY = "EC";
 const JWKS_CURVE = "P-256";
-const TOKEN_DURATION = "60 * 60 * 24"; // seconds
+const JWT_ALG = "ES256";
+const TOKEN_DURATION = 60 * 60 * 24 * 1; // in seconds = 1 day
+
+const THIS_ORGANIZATION_NAME = "Test Organization"
+const THIS_ORGANIZATION_HOMEPAGE_URI = "https://testorganization.example.com/homepage"
+const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg=="
 
 // SSL/TLS certificates
 const options = {
   key: fs.readFileSync('server.key'), // Replace with the path to your private key
   cert: fs.readFileSync('server.crt'), // Replace with the path to your certificate
 };
+
+
+
+
+
+
+
+// Helper functions:
+
+function generate_JWT_entity_statement(sub_name, db) {
+  return new Promise((resolve, reject) => {
+      const queryIssuer = `SELECT organization_name, homepage_uri, logo_uri FROM issuers WHERE sub_name = ?`;
+      const queryKeys = `SELECT key_id, x, y FROM issuer_public_keys WHERE sub_name = ?`;
+
+      db.get(queryIssuer, [sub_name], (err, issuer) => {
+          if (err) return reject({ status: 500, error: 'Database query failed' });
+          if (!issuer) return reject({ status: 404, error: 'Issuer not found' });
+          
+          db.all(queryKeys, [sub_name], (err, keys) => {
+              if (err) return reject({ status: 500, error: 'Database query failed' });
+
+              const isTrustAnchor = sub_name === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
+              const entityStatement = {
+                  sub: sub_name,
+                  metadata: {
+                      federation_entity: {
+                          organization_name: issuer.organization_name,
+                          homepage_uri: issuer.homepage_uri,
+                          logo_uri: issuer.logo_uri,
+                          ...(isTrustAnchor && {
+                              federation_fetch_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/fetch`,
+                              federation_list_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/subordinate_listing`
+                          })
+                      }
+                  },
+                  jwks: {
+                      keys: keys.map(key => ({
+                          kty: JWKS_KTY,
+                          crv: JWKS_CURVE,
+                          kid: key.key_id,
+                          x: key.x,
+                          y: key.y
+                      }))
+                  },
+                  iss: `${THIS_URL}/${TRUST_ANCHOR_NAME}`,
+                  exp: Math.floor(Date.now() / 1000) + TOKEN_DURATION,
+                  iat: Math.floor(Date.now() / 1000),
+                  jti: require('crypto').randomBytes(16).toString('hex')
+              };
+              resolve(entityStatement);
+          });
+      });
+  });
+}
+
+function generate_JWT_header_and_signing_JWK(db) {
+  return new Promise((resolve, reject) => {
+      const querySigningKeyPrivate = `SELECT d, this_key_id FROM registry_private_keys ORDER BY this_key_id DESC LIMIT 1;`;
+      const querySigningKeyPublic = `SELECT x, y FROM registry_public_keys WHERE this_key_id = ?`;
+
+      db.get(querySigningKeyPrivate, (err, private_key_data) => {
+          if (err) return reject({ status: 500, error: 'Database query failed' });
+          if (!private_key_data) return reject({ status: 404, error: 'Signing key not found' });
+          
+          db.get(querySigningKeyPublic, [private_key_data['this_key_id']], (err, public_key_data) => {
+              if (err) return reject({ status: 500, error: 'Database query failed' });
+              
+              resolve({
+                  jwt_header: {
+                      kid: private_key_data['this_key_id'],
+                      typ: "entity-statement+jwt",
+                      alg: JWT_ALG,
+                  },
+                  signing_jwk: {
+                      kty: JWKS_KTY,
+                      crv: JWKS_CURVE,
+                      kid: private_key_data['this_key_id'],
+                      x: public_key_data['x'],
+                      y: public_key_data['y'],
+                      d: private_key_data['d']
+                  }
+              });
+          });
+      });
+  });
+}
+
+
+
+
+
+
 
 // Startup checks:
 // TODO: Get most recent JWKs from external sources
@@ -51,19 +150,9 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
 
 
 
-
-// Function to sanitize ISSUER string
-const sanitizeIssuer = (issuer) => {
-  const sanitized = issuer.replace(/[^a-zA-Z0-9_]/g, ''); // Keep alphanumeric and underscores
-  if (sanitized !== issuer) {
-    console.warn(`Non-alphanumeric characters found in issuer: ${issuer}`);
-  }
-  return sanitized;
-};
-
-// Query the database for issuers
+// Query the database for internal issuers before startup
 const fetchInternalIssuers = () => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => { // Get only issuers which have this website at the front
     const query = `SELECT sub_name FROM issuers WHERE approval_status <> 0 AND sub_name LIKE ?`;
     db.all(query, [`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/%`], (err, rows) => {
       if (err) {
@@ -82,14 +171,13 @@ const fetchInternalIssuers = () => {
       const issuers = await fetchInternalIssuers();
       issuers.forEach(({ sub_name }) => {
         const issuer = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
-        const sanitizedIssuer = sanitizeIssuer(issuer);
 
         // Serve the .well-known/openid-federation for the issuer
-        app.get(`/issuers/${sanitizedIssuer}/.well-known/openid-federation`, (req, res) => {
+        app.get(`/issuers/${issuer}/.well-known/openid-federation`, (req, res) => {
           res.status(200).json({});
         });
 
-        console.log(`Serving .well-known/openid-federation for ${sanitizedIssuer}`);
+        console.log(`Serving .well-known/openid-federation for ${issuer}`);
       });
     } catch (error) {
       console.error('Error fetching issuers:', error);
@@ -119,32 +207,26 @@ app.get(`/${TRUST_ANCHOR_NAME}/subordinate_listing`, (req, res) => {
 
 
 
-// Fetch endpoint - checks if the sub_name exists in the database
-app.get(`/${TRUST_ANCHOR_NAME}/fetch`, (req, res) => {
-  const subUrl = req.query.sub;
-
-  // TODO: determine proper implementation
-  // if (!subUrl) {
-  //   return res.status(400).json({ error: 'Missing sub query parameter' });
-  // }
-
-  const query = `SELECT sub_name FROM issuers WHERE sub_name = ?`;
-
-  db.get(query, [subUrl], (err, row) => {
-    if (err) {
-      console.error('Error executing query:', err.message);
-      return res.status(500).json({ error: 'Database query failed' });
-    }
-
-    if (!row) {
-      // If no matching sub_name is found, return 404 with an empty object
-      return res.status(404).json({});
-    }
-
-    // If the sub_name exists, return 200 with an empty object
-    res.status(200).json({});
-  });
+// Fetch endpoint - checks if the sub_name exists in the database and returns a signed ES
+app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
+  try {
+    const subUrl = req.query.sub;
+    if (!subUrl) return res.status(400).json({ error: 'Missing sub query parameter' });
+    
+    const { jwt_header, signing_jwk } = await generate_JWT_header_and_signing_JWK(db);
+    const entityStatement = await generate_JWT_entity_statement(subUrl, db);
+  
+    const jwt = await new jose.SignJWT(entityStatement)
+        .setProtectedHeader(jwt_header)
+        .sign(signing_jwk);
+    
+    res.status(200).json({ jwt });
+} catch (error) {
+    console.log(error);
+    res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
+}
 });
+
 
 
 

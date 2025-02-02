@@ -6,7 +6,7 @@ TODO
 
 ## Dependencies:
 
-sqlite3, express
+sqlite3, express, jose
 
 ## Key commands:
 
