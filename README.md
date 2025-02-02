@@ -2,7 +2,9 @@
 
 ## Description:
 
-TODO
+A pilot implementation of an issuer registry for learning and employment credentials, using the [OpenID Federation](https://openid.net/specs/openid-federation-1_0.html) specification.
+
+![status badge](https://github.com/digitalcredentials/dcc-members-oidf/actions/workflows/apitests.yml/badge.svg)
 
 ## Dependencies:
 
@@ -10,11 +12,11 @@ sqlite3, express, jose
 
 ## Key commands:
 
-- Load schema.sql into DB: `npm run builddb`
-- Load test data into DB: `npm run loadtestdata`
-- Generate server keys (HTTPS): `npm run keygen`
-- Launch webservice: `npm run webservice`
-- Test endpoint: `curl -X GET http://localhost:3000/test1`
+1. Create/recreate DB schema: `npm run builddb`
+2. Load/reload test data into DB: `npm run loadtestdata`
+3. Generate server keys (HTTPS): `npm run keygen`
+4. Launch webservice: `npm run webservice`
+5. Test endpoint(s): `curl -X GET http://localhost:3000/{{TRUST_ANCHOR_NAME}}/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/issuer-registry/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests.
 
 ## Ancillary scripts
 
@@ -25,8 +27,7 @@ sqlite3, express, jose
 
 TODO
 
-
-
 ## Other tools used:
 
-- https://emn178.github.io/online-tools/ecdsa/key-generator/ to generate test EC P-256 keys
+- https://emn178.github.io/online-tools/ecdsa/key-generator/ to generate and test EC P-256 keys informally
+- https://jwt.io/ to inspect JWTs
