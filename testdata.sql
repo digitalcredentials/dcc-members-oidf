@@ -12,18 +12,18 @@ VALUES
         'https://threetech.com', 'did:example:123456789abcdef', 'signed_statement_abc123_BASE64');
 
 -- Insert into issuer_public_keys
-INSERT INTO issuer_public_keys (sub_name, sub_name_internal_key_id, x, y)
+INSERT INTO issuer_public_keys (sub_name, key_id, x, y)
 VALUES 
-    ('https://sandbox123123.example.com/issuers/oneuni', 1, 'tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og', 'gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4'),  -- Internally hosted key
-    ('https://twotraining.com/it-services', NULL, 'k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A', 'MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk'),  -- Externally hosted key (sub_name_internal_key_id is NULL)
-    ('https://sandbox123123.example.com/issuers/threetech', 1, 'VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s', 'HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg');  -- Internally hosted key
+    ('https://sandbox123123.example.com/issuers/oneuni', 'abc1', 'tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og', 'gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4'),  -- Internally hosted key
+    ('https://twotraining.com/it-services', '45fa', 'k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A', 'MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk'),  -- Externally hosted key (key_id is NULL)
+    ('https://sandbox123123.example.com/issuers/threetech', '2abb', 'VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s', 'HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg');  -- Internally hosted key
 
 
 -- Insert into issuer_private_keys (only for internally hosted keys)
-INSERT INTO issuer_private_keys (sub_name, sub_name_internal_key_id, p)
+INSERT INTO issuer_private_keys (sub_name, key_id, p)
 VALUES 
-    ('https://sandbox123123.example.com/issuers/oneuni', 1, 'aniEY5Xk4i1221C1cCmnhQOX1F94xTlMjdfapQ9VHg4'),
-    ('https://sandbox123123.example.com/issuers/threetech', 1, 'nd4N8us_xrKbvISGBn6rMe9pqXXsiFtEUsaXF3jNkx8');
+    ('https://sandbox123123.example.com/issuers/oneuni', 'abc1', 'aniEY5Xk4i1221C1cCmnhQOX1F94xTlMjdfapQ9VHg4'),
+    ('https://sandbox123123.example.com/issuers/threetech', '2abb', 'nd4N8us_xrKbvISGBn6rMe9pqXXsiFtEUsaXF3jNkx8');
 
 
 -- Insert into registry_public_keys
