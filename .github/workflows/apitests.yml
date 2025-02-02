@@ -1,4 +1,4 @@
-name: Run API Tests
+name: Run API Tests (Sample Dataset)
 
 on:
   pull_request:
