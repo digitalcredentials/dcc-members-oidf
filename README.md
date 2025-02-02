@@ -4,7 +4,7 @@
 
 A pilot implementation of an issuer registry for learning and employment credentials, using the [OpenID Federation](https://openid.net/specs/openid-federation-1_0.html) specification.
 
-https://github.com/digitalcredentials/dcc-members-oidf/actions/workflows/apitests.yml/badge.svg
+![status badge](https://github.com/digitalcredentials/dcc-members-oidf/actions/workflows/apitests.yml/badge.svg)
 
 ## Dependencies:
 
