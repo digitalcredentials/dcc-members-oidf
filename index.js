@@ -9,8 +9,9 @@ const port = process.env.PORT || 3000;
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
 const THIS_URL = "https://sandbox123123.example.com"; // For determining internal path for fetch statement
-const JWKS_KTY = "EC"
-const JWKS_CURVE = "P-256"
+const JWKS_KTY = "EC";
+const JWKS_CURVE = "P-256";
+const TOKEN_DURATION = "60 * 60 * 24"; // seconds
 
 // SSL/TLS certificates
 const options = {
@@ -63,7 +64,7 @@ const sanitizeIssuer = (issuer) => {
 // Query the database for issuers
 const fetchInternalIssuers = () => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT sub_name FROM issuers WHERE sub_name LIKE ?`;
+    const query = `SELECT sub_name FROM issuers WHERE approval_status <> 0 AND sub_name LIKE ?`;
     db.all(query, [`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/%`], (err, rows) => {
       if (err) {
         reject(err);
@@ -73,6 +74,7 @@ const fetchInternalIssuers = () => {
     });
   });
 };
+
 
 // Serve well-known openid-federation file for each issuer
 (async () => {
@@ -94,8 +96,6 @@ const fetchInternalIssuers = () => {
     }
   }
 )();
-
-
 
 
 
