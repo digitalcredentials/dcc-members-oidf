@@ -20,18 +20,6 @@ CREATE TABLE issuer_public_keys (
     FOREIGN KEY (sub_name) REFERENCES issuers(sub_name) ON DELETE CASCADE
 );
 
--- Internally hosted private keys
--- Constraint: if sub_name starts with "https://testorganization.example.com/" then the private key can be hosted
--- (can't host other people's private keys)
-CREATE TABLE issuer_private_keys (
-    sub_name TEXT NOT NULL,
-    key_id TEXT NOT NULL,
-    d TEXT NOT NULL,
-    PRIMARY KEY (sub_name, key_id),
-    FOREIGN KEY (sub_name, key_id) REFERENCES issuer_public_keys(sub_name, key_id) ON DELETE CASCADE
-    CONSTRAINT only_host_our_own_PKs CHECK (sub_name LIKE 'https://testorganization.example.com/%')
-);
-
 
 -- Table for all trust registry public keys. At the moment, only supports ECC P-256.
 CREATE TABLE registry_public_keys (
