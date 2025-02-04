@@ -246,7 +246,10 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
                 .setProtectedHeader(jwt_header)
                 .sign(signing_jwk);
             
-            res.status(200).json({ jwt });
+                res.status(200)
+                .set('Content-Type', 'application/entity-statement+jwt')
+                .send(jwt);
+
           } catch (error) {
               console.log(error);
               res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
@@ -299,7 +302,10 @@ app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
     
-    res.status(200).json({ jwt });
+    
+      res.status(200)
+      .set('Content-Type', 'application/entity-statement+jwt')
+      .send(jwt);
   } catch (error) {
       console.log(error);
       res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
@@ -318,7 +324,11 @@ app.get(`/${TRUST_ANCHOR_NAME}/.well-known/openid-federation`, async (req, res) 
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
     
-    res.status(200).json({ jwt });
+    
+    res.status(200)
+    .set('Content-Type', 'application/entity-statement+jwt')
+    .send(jwt);
+
   } catch (error) {
       console.log(error);
       res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
