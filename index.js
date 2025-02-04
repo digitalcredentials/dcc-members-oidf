@@ -109,6 +109,9 @@ function generate_JWT_entity_statement(db, sub_name) {
               entityStatement.metadata.federation_entity.homepage_uri = issuer.homepage_uri;
               entityStatement.metadata.federation_entity.logo_uri = issuer.logo_uri;
 
+              // entityStatement.metadata.associated_did_metadata = {};
+              // entityStatement.metadata.associated_did_metadata.did = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
+
               entityStatement.jwks.keys = keys.map(key => ({
                   kty: JWKS_KTY,
                   crv: JWKS_CURVE,
@@ -134,41 +137,6 @@ function generate_JWT_header_and_signing_JWK_registry(db) {
       db.get(querySigningKeyPrivate, (err, private_key_data) => {
           if (err) return reject({ status: 500, error: 'Database query failed' });
           if (!private_key_data) return reject({ status: 404, error: 'Signing key not found' });
-          
-          db.get(querySigningKeyPublic, [private_key_data['key_id']], (err, public_key_data) => {
-              if (err) return reject({ status: 500, error: 'Database query failed' });
-              
-              resolve({
-                  jwt_header: {
-                      kid: private_key_data['key_id'],
-                      typ: "entity-statement+jwt",
-                      alg: JWT_ALG,
-                  },
-                  signing_jwk: {
-                      kty: JWKS_KTY,
-                      crv: JWKS_CURVE,
-                      kid: private_key_data['key_id'],
-                      x: public_key_data['x'],
-                      y: public_key_data['y'],
-                      d: private_key_data['d']
-                  }
-              });
-          });
-      });
-  });
-}
-
-
-
-// Generate the JWT header and full private JWK for JWT signing. For signing on behalf of a hosted issuer.
-function generate_JWT_header_and_signing_JWK_issuer(db, sub_name) {
-  return new Promise((resolve, reject) => {
-      const querySigningKeyPrivate = `SELECT d, key_id FROM issuer_private_keys WHERE sub_name = ? ORDER BY key_id DESC LIMIT 1;`;
-      const querySigningKeyPublic = `SELECT x, y FROM issuer_public_keys WHERE key_id = ?`;
-
-      db.get(querySigningKeyPrivate, [sub_name], (err, private_key_data) => {
-          if (err) return reject({ status: 500, error: 'Database query failed' });
-          if (!private_key_data) return reject({ status: 404, error: 'Issuer not found' });
           
           db.get(querySigningKeyPublic, [private_key_data['key_id']], (err, public_key_data) => {
               if (err) return reject({ status: 500, error: 'Database query failed' });
@@ -238,19 +206,15 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
 
         // Serve the .well-known/openid-federation for the issuer
         app.get(`/issuers/${issuer}/.well-known/openid-federation`, async (req, res) => {
-          try {
-            const { jwt_header, signing_jwk } = await generate_JWT_header_and_signing_JWK_issuer(db, sub_name);
-            const entityStatement = await generate_JWT_entity_statement(db, sub_name);
-          
-            const jwt = await new jose.SignJWT(entityStatement)
-                .setProtectedHeader(jwt_header)
-                .sign(signing_jwk);
-            
-            res.status(200).json({ jwt });
-          } catch (error) {
-              console.log(error);
-              res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
-          }
+          db.get(`SELECT did_signed_sub_statement FROM issuers WHERE approval_status <> 0 AND sub_name = ?`, [sub_name], (err, issuer) => {
+            if (err) return reject({ status: 500, error: 'Database query failed' });
+            if (!issuer) return reject({ status: 404, error: 'Issuer not found' });
+
+            res.status(200)
+                .set('Content-Type', 'application/entity-statement+jwt')
+                .send(issuer.did_signed_sub_statement);
+
+          });
         });
 
         console.log(`Serving .well-known/openid-federation for ${issuer}`);
@@ -299,7 +263,10 @@ app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
     
-    res.status(200).json({ jwt });
+    
+      res.status(200)
+      .set('Content-Type', 'application/entity-statement+jwt')
+      .send(jwt);
   } catch (error) {
       console.log(error);
       res.status(error.status || 500).json({ error: error.error || 'Internal server error' });
@@ -318,7 +285,11 @@ app.get(`/${TRUST_ANCHOR_NAME}/.well-known/openid-federation`, async (req, res) 
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
     
-    res.status(200).json({ jwt });
+    
+    res.status(200)
+    .set('Content-Type', 'application/entity-statement+jwt')
+    .send(jwt);
+
   } catch (error) {
       console.log(error);
       res.status(error.status || 500).json({ error: error.error || 'Internal server error' });

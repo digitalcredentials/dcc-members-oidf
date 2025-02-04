@@ -7,12 +7,7 @@ CREATE TABLE issuers (
     logo_uri TEXT NOT NULL,
     homepage_uri TEXT NOT NULL,
     did TEXT,
-    did_signed_sub_statement TEXT,
-    CONSTRAINT did_constraints CHECK (
-        (did IS NOT NULL AND did_signed_sub_statement IS NOT NULL) OR
-        (did IS NULL AND did_signed_sub_statement IS NULL)
-    )
-
+    did_signed_sub_statement TEXT
 );
 
 -- Table for all issuer public keys stored in the registry. At the moment, only supports ECC P-256.
@@ -23,18 +18,6 @@ CREATE TABLE issuer_public_keys (
     y TEXT NOT NULL,
     PRIMARY KEY (sub_name, key_id),
     FOREIGN KEY (sub_name) REFERENCES issuers(sub_name) ON DELETE CASCADE
-);
-
--- Internally hosted private keys
--- Constraint: if sub_name starts with "https://testorganization.example.com/" then the private key can be hosted
--- (can't host other people's private keys)
-CREATE TABLE issuer_private_keys (
-    sub_name TEXT NOT NULL,
-    key_id TEXT NOT NULL,
-    d TEXT NOT NULL,
-    PRIMARY KEY (sub_name, key_id),
-    FOREIGN KEY (sub_name, key_id) REFERENCES issuer_public_keys(sub_name, key_id) ON DELETE CASCADE
-    CONSTRAINT only_host_our_own_PKs CHECK (sub_name LIKE 'https://testorganization.example.com/%')
 );
 
 
