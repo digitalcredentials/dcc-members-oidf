@@ -7,12 +7,7 @@ CREATE TABLE issuers (
     logo_uri TEXT NOT NULL,
     homepage_uri TEXT NOT NULL,
     did TEXT,
-    did_signed_sub_statement TEXT,
-    CONSTRAINT did_constraints CHECK (
-        (did IS NOT NULL AND did_signed_sub_statement IS NOT NULL) OR
-        (did IS NULL AND did_signed_sub_statement IS NULL)
-    )
-
+    did_signed_sub_statement TEXT
 );
 
 -- Table for all issuer public keys stored in the registry. At the moment, only supports ECC P-256.
