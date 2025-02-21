@@ -197,34 +197,6 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
 
 
 
-// Serve well-known openid-federation files for each issuer
-(async () => {
-    try {
-      const issuers = await fetchInternalIssuers();
-      issuers.forEach(({ sub_name }) => {
-        const issuer = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
-
-        // Serve the .well-known/openid-federation for the issuer
-        app.get(`/issuers/${issuer}/.well-known/openid-federation`, async (req, res) => {
-          db.get(`SELECT did_signed_sub_statement FROM issuers WHERE approval_status <> 0 AND sub_name = ?`, [sub_name], (err, issuer) => {
-            if (err) return reject({ status: 500, error: 'Database query failed' });
-            if (!issuer) return reject({ status: 404, error: 'Issuer not found' });
-
-            res.status(200)
-                .set('Content-Type', 'application/entity-statement+jwt')
-                .send(issuer.did_signed_sub_statement);
-
-          });
-        });
-
-        console.log(`Serving .well-known/openid-federation for ${issuer}`);
-      });
-    } catch (error) {
-      console.error('Error fetching issuers:', error);
-    }
-  }
-)();
-
 
 
 // Serve subordinate listing endpoint - queries issuers with approval_status <> 0

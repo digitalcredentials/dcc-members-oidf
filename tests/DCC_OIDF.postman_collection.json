@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "63290bb1-3dfe-4af9-969a-c34d8595b216",
+		"_postman_id": "718d67de-8b4e-4bdb-a7b7-52f2da091ae0",
 		"name": "DCC_OIDF",
 		"description": "**OpenID Spec:** [<b>“Set up web services that can publish signed Entity Statements, one for the URL corresponding to the federation's Entity Identifier returning an Entity Configuration”</b>](https://openid.net/specs/openid-federation-1_0.html#name-setting-up-a-federation)\n\n- **This endpoint is used to get detailed metadata for the trust anchor**",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -158,41 +158,6 @@
 						}
 					},
 					"response": []
-				},
-				{
-					"name": "Successful internally hosted endpoint returns 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Response status code is 200\", function () {\r",
-									"    pm.expect(pm.response.code).to.equal(200);\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{TEST_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}/.well-known/openid-federation",
-							"host": [
-								"{{TEST_URL}}"
-							],
-							"path": [
-								"{{ISSUERS_SUBFOLDER_NAME}}",
-								"{{TEST_ISSUER}}",
-								".well-known",
-								"openid-federation"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		},
@@ -345,139 +310,6 @@
 							],
 							"path": [
 								"{{TRUST_ANCHOR_NAME}}",
-								".well-known",
-								"openid-federation"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Validity and signature of hosted Issuer",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"",
-									"// https://joolfe.github.io/postman-util-lib/",
-									"eval( pm.collectionVariables.get('pmlib_code') )",
-									"",
-									"// minified",
-									"// (t,p)=>{let b=t.split('.')[p].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(atob(b).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}",
-									"// normal version",
-									"// function parseJwt (token, part) {",
-									"//     var base64Url = token.split('.')[part];",
-									"//     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
-									"//     var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {",
-									"//         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
-									"//     }).join(''));",
-									"//     return JSON.parse(jsonPayload);",
-									"// }",
-									"eval( pm.collectionVariables.get('parsejwt_code_RS') )",
-									"",
-									"",
-									"// TODO: allow signing not by the first key",
-									"pm.test(\"Well-formed and current self-signed JWT entity statement is received, signed by first key in JWT entity statement\", function () {",
-									"    pm.expect(pmlib.jwtVerify(pm.response.text(), parseJwt(pm.response.text(),1)['jwks']['keys'][0], algorithm = 'ES256')).to.be.ok; // Truthy value",
-									"});",
-									"",
-									"",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"require('atob')"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{TEST_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}/.well-known/openid-federation",
-							"host": [
-								"{{TEST_URL}}"
-							],
-							"path": [
-								"{{ISSUERS_SUBFOLDER_NAME}}",
-								"{{TEST_ISSUER}}",
-								".well-known",
-								"openid-federation"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Correct contents of hosted Issuer",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"",
-									"// Custom code to parse JWT by section",
-									"eval( pm.collectionVariables.get('parsejwt_code_RS') )",
-									"",
-									"jwt = pm.response.text();",
-									"",
-									"",
-									"pm.test(\"Check ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
-									"    var payload = parseJwt(jwt, 1);",
-									"    var expectedKeys = eval(pm.collectionVariables.get('ENTITY_STATEMENT_MANDATORY_KEYS'));",
-									"    expectedKeys.forEach(function (key) {",
-									"        pm.expect(payload).to.have.property(key);",
-									"    });",
-									"});",
-									"",
-									"pm.test(\"Check METADATA_FEDERATION_ENTITY_MANDATORY_KEYS in JWT Federation Entity object\", function () {",
-									"    var payload = parseJwt(jwt, 1);",
-									"    var metadata = payload.metadata.federation_entity;",
-									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_FEDERATION_ENTITY_MANDATORY_KEYS'));",
-									"    ",
-									"    expectedKeys.forEach(function (key) {",
-									"        pm.expect(metadata).to.have.property(key);",
-									"    });",
-									"});",
-									"",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"require('atob')"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{TEST_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/{{TEST_ISSUER}}/.well-known/openid-federation",
-							"host": [
-								"{{TEST_URL}}"
-							],
-							"path": [
-								"{{ISSUERS_SUBFOLDER_NAME}}",
-								"{{TEST_ISSUER}}",
 								".well-known",
 								"openid-federation"
 							]
