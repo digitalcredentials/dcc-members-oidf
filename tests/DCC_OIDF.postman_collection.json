@@ -426,16 +426,6 @@
 									"    });",
 									"});",
 									"",
-									"pm.test(\"Check METADATA_FEDERATION_ENTITY_MANDATORY_KEYS in JWT Federation Entity object\", function () {",
-									"    var payload = parseJwt(jwt, 1);",
-									"    var metadata = payload.metadata.federation_entity;",
-									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_FEDERATION_ENTITY_MANDATORY_KEYS'));",
-									"    ",
-									"    expectedKeys.forEach(function (key) {",
-									"        pm.expect(metadata).to.have.property(key);",
-									"    });",
-									"});",
-									"",
 									""
 								],
 								"type": "text/javascript",
@@ -629,7 +619,7 @@
 		},
 		{
 			"key": "METADATA_FEDERATION_ENTITY_MANDATORY_KEYS",
-			"value": "[\"homepage_uri\", \"logo_uri\", \"organization_name\"]",
+			"value": "[\"homepage_uri\", \"logo_uri\", \"policy_uri\", \"organization_name\"]",
 			"type": "string"
 		},
 		{

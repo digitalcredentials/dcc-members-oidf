@@ -16,6 +16,7 @@ const TOKEN_DURATION = 60 * 60 * 24 * 1; // in seconds = 1 day
 const THIS_ORGANIZATION_NAME = "Test Organization"
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://testorganization.example.com/homepage"
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg=="
+const THIS_ORGANIZATION_POLICY_URI = "https://www.testpolicyuri.com"
 
 // SSL/TLS certificates
 const options = {
@@ -64,6 +65,7 @@ function generate_JWT_entity_statement(db, sub_name) {
                   organization_name: THIS_ORGANIZATION_NAME,
                   homepage_uri: THIS_ORGANIZATION_HOMEPAGE_URI,
                   logo_uri: THIS_ORGANIZATION_LOGO_URI,
+                  policy_uri: THIS_ORGANIZATION_POLICY_URI,
                   federation_fetch_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/fetch`,
                   federation_list_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/subordinate_listing`
               } : {
