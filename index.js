@@ -11,9 +11,6 @@ const port = process.env.PORT || 3000;
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
 const THIS_URL = "https://testorganization.example.com"; // For determining internal path for fetch statement (before issuers subfolder)
-const JWKS_KTY = "EC";
-const JWKS_CURVE = "P-256";
-const JWT_ALG = "ES256";
 const TOKEN_DURATION = 60 * 60 * 24 * 1; // in seconds = 1 day
 
 const THIS_ORGANIZATION_NAME = "Test Organization"
@@ -56,8 +53,8 @@ const fetchInternalIssuers = () => {
 function generate_JWT_entity_statement(db, sub_name) {
 
   const isTrustAnchor = sub_name === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
-  const queryKeys = `SELECT key_id, x, y FROM issuer_public_keys WHERE sub_name = ?`;
-  const queryTrustAnchorKeys = `SELECT key_id, x, y FROM registry_public_keys`;
+  const queryKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM issuer_public_keys WHERE sub_name = ?`;
+  const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
 
   const entityStatement = {
       sub: sub_name,
@@ -91,13 +88,16 @@ function generate_JWT_entity_statement(db, sub_name) {
           if (err) return reject({ status: 500, error: 'Database query failed' });
 
           if (isTrustAnchor) {
-              entityStatement.jwks.keys = keys.map(key => ({
-                  kty: JWKS_KTY,
-                  crv: JWKS_CURVE,
-                  kid: key.key_id,
-                  x: key.x,
-                  y: key.y
-              }));
+              entityStatement.jwks.keys = keys.map(key => {
+                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
+                return {
+                    kty: key.jwks_kty,
+                    crv: key.jwks_curve,
+                    kid: key.key_id,
+                    x: pubKey.x, // Extract 'x' from the parsed object
+                    y: pubKey.y  // Extract 'y' from the parsed object
+                };
+            });
               return resolve(entityStatement);
           }
 
@@ -112,13 +112,15 @@ function generate_JWT_entity_statement(db, sub_name) {
               // entityStatement.metadata.associated_did_metadata = {};
               // entityStatement.metadata.associated_did_metadata.did = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
 
-              entityStatement.jwks.keys = keys.map(key => ({
-                  kty: JWKS_KTY,
-                  crv: JWKS_CURVE,
-                  kid: key.key_id,
-                  x: key.x,
-                  y: key.y
-              }));
+              entityStatement.jwks.keys = keys.map(key => {
+                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
+                return {
+                    kty: key.jwks_kty,
+                    crv: key.jwks_curve,
+                    kid: key.key_id,
+                    x: pubKey.x, // Extract 'x' from the parsed object
+                    y: pubKey.y  // Extract 'y' from the parsed object
+                }});
 
               resolve(entityStatement);
           });
@@ -131,8 +133,8 @@ function generate_JWT_entity_statement(db, sub_name) {
 // Uses first key in registry_private_keys and registry_public_keys tables
 function generate_JWT_header_and_signing_JWK_registry(db) {
   return new Promise((resolve, reject) => {
-      const querySigningKeyPrivate = `SELECT d, key_id FROM registry_private_keys ORDER BY key_id DESC LIMIT 1;`;
-      const querySigningKeyPublic = `SELECT x, y FROM registry_public_keys WHERE key_id = ?`;
+      const querySigningKeyPrivate = `SELECT priv_key, key_id FROM registry_private_keys ORDER BY key_id DESC LIMIT 1;`;
+      const querySigningKeyPublic = `SELECT jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys WHERE key_id = ?`;
 
       db.get(querySigningKeyPrivate, (err, private_key_data) => {
           if (err) return reject({ status: 500, error: 'Database query failed' });
@@ -140,20 +142,21 @@ function generate_JWT_header_and_signing_JWK_registry(db) {
           
           db.get(querySigningKeyPublic, [private_key_data['key_id']], (err, public_key_data) => {
               if (err) return reject({ status: 500, error: 'Database query failed' });
-              
+              const pubKey = JSON.parse(public_key_data.pub_key); // Parse the JSON string
+
               resolve({
                   jwt_header: {
                       kid: private_key_data['key_id'],
                       typ: "entity-statement+jwt",
-                      alg: JWT_ALG,
+                      alg: public_key_data['jwt_alg'],
                   },
                   signing_jwk: {
-                      kty: JWKS_KTY,
-                      crv: JWKS_CURVE,
+                      kty: public_key_data.jwks_kty,
+                      crv: public_key_data.jwks_curve,
                       kid: private_key_data['key_id'],
-                      x: public_key_data['x'],
-                      y: public_key_data['y'],
-                      d: private_key_data['d']
+                      x: pubKey['x'],
+                      y: pubKey['y'],
+                      d: private_key_data['priv_key']
                   }
               });
           });
@@ -230,7 +233,6 @@ app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
     
     const { jwt_header, signing_jwk } = await generate_JWT_header_and_signing_JWK_registry(db);
     const entityStatement = await generate_JWT_entity_statement(db, subUrl);
-  
     const jwt = await new jose.SignJWT(entityStatement)
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);

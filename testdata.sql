@@ -10,20 +10,23 @@ VALUES
         'https://threetech.com', 'eyJraWQiOiJvbmV1bmkta2V5MSIsInR5cCI6ImVudGl0eS1zdGF0ZW1lbnQrand0IiwiYWxnIjoiRVMyNTYifQ.eyJzdWIiOiJodHRwczovL3Rlc3Rvcmdhbml6YXRpb24uZXhhbXBsZS5jb20vaXNzdWVycy9kaWQ6Y2hlcWQ6bWFpbm5ldDp5RzV0a1hBelZxMnA5bU5MaHozcjhLWnVRVzR5Qlh2TSIsIm1ldGFkYXRhIjp7ImZlZGVyYXRpb25fZW50aXR5Ijp7Im9yZ2FuaXphdGlvbl9uYW1lIjoiT25lVW5pIFVuaXZlcnNpdHkiLCJob21lcGFnZV91cmkiOiJodHRwczovL29uZXVuaS5lZHUiLCJsb2dvX3VyaSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBQ0FBQUFBZ0NBSUFBQUQ4R08yakFBQUFBWE5TUjBJQXJzNGM2UUFBQUFSblFVMUJBQUN4and2OFlRVUFBQUFKY0VoWmN3QUFFblFBQUJKMEFkNW1IM2dBQUFCNFNVUkJWRWhMWTFEYTZFTlROR29CUVRScUFVRTBZaXh3a3EzWDV0TmdBQU5Ca1Jsb3N2Z1FFUmJNME9hQW1Bd0ZOTEZBa01OZFcyS0drd2pJRTFTM0FJRkdMU0NJUmkwZ2lFWXR3SUhxNVRrMEJDRUlhRHdJd0xoODlSaUtNUkJSRmtETnhRQlVzb0F5TkdvQlFUUnFBVUUwMUMzWTZBTUFzRHhKb3dYT3M2b0FBQUFBU1VWT1JLNUNZSUk9In19LCJqd2tzIjp7ImtleXMiOlt7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJvbmV1bmkta2V5MSIsIngiOiJ0Tm1yU0hNZ3FvdjRrSWtYZDBWcURXS1FhNHhvMm5yV3RVU2d0VWJEN29nIiwieSI6Imd4ZWE4bDVLWDhBajBHZm5COGhZS0I4WkVjVVljT1RnQURBVUF1STJVdjQifV19LCJpc3MiOiJodHRwczovL3Rlc3Rvcmdhbml6YXRpb24uZXhhbXBsZS5jb20vaXNzdWVyLXJlZ2lzdHJ5IiwiZXhwIjoxNzM4NzUzMDYxLCJpYXQiOjE3Mzg2NjY2NjEsImp0aSI6Ijk5NjU2MzRlY2Q1MGYzZGJiNmE3YWVkYTQ2NjBkOTgyIn0.K6GAHBtw7tZ8miHc-kAINbc2chWMTFh5GN-Y9CuP2TOWfa7H2Hf9E9-rQI7SeEdkIF3K0iRUkU4kXQX-4a555A');
 
 -- Insert into issuer_public_keys
-INSERT INTO issuer_public_keys (sub_name, key_id, x, y)
+INSERT INTO issuer_public_keys (sub_name, key_id, jwks_kty, jwks_curve, jwt_alg, pub_key)
 VALUES 
-    ('https://testorganization.example.com/issuers/did:cheqd:mainnet:yG5tkXAzVq2p9mNLhz3r8KZuQW4yBXvM', 'oneuni-key1', 'tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og', 'gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4'), 
-    ('https://testorganization.example.com/issuers/did:cheqd:mainnet:xH9vmRCyWt6q3pKJdy8s5LZuVX2oNYbQ', 'twotraining-key1', 'k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A', 'MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk'), 
-    ('https://testorganization.example.com/issuers/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK', 'threetech-key1', 'VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s', 'HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg'); 
+    ('https://testorganization.example.com/issuers/did:cheqd:mainnet:yG5tkXAzVq2p9mNLhz3r8KZuQW4yBXvM', 'oneuni-key1', 'EC', 'P-256', 'ES256', '{"x":"tNmrSHMgqov4kIkXd0VqDWKQa4xo2nrWtUSgtUbD7og","y":"gxea8l5KX8Aj0GfnB8hYKB8ZEcUYcOTgADAUAuI2Uv4"}'), 
+    ('https://testorganization.example.com/issuers/did:cheqd:mainnet:xH9vmRCyWt6q3pKJdy8s5LZuVX2oNYbQ', 'twotraining-key1', 'EC', 'P-256', 'ES256', '{"x":"k82OaXuBoov6vd6RyBF2a8bc_1wDAWhnAnmJ3lT_v4A","y":"MEfF3awtEa7TSpyz_Xr_SYrQKodOuFp0G6iUFZmn5Rk"}'), 
+    ('https://testorganization.example.com/issuers/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK', 'threetech-key1', 'EC', 'P-256', 'ES256', '{"x":"VnihszlJv1cUFXVHcvKHmagQ5fmMFDdntSmaBGHaP1s","y":"HoZa1RBiwdZrynRDh7UvVL4G8Iiw63NjsjzMT2R8btg"}'); 
 
 
 
 -- Insert into registry_public_keys
-INSERT INTO registry_public_keys (key_id, x, y)
+INSERT INTO registry_public_keys (key_id, jwks_kty, jwks_curve, jwt_alg, pub_key)
 VALUES 
-    ('issuerregistry-key1', 'Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs', 'J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY');
+    ('issuerregistry-key1', 'EC', 'P-256', 'ES256', '{"x":"Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs","y":"J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY"}');
+    -- ('issuerregistry-key2', 'ED', 'Ed25519', 'EdDSA', '{"x":"aaa"}');
+
 
 -- Insert into registry_private_keys
-INSERT INTO registry_private_keys (key_id, d)
+INSERT INTO registry_private_keys (key_id, priv_key)
 VALUES 
     ('issuerregistry-key1', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
+    -- ('issuerregistry-key2', 'aaa');

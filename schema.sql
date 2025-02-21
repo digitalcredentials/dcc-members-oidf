@@ -14,8 +14,10 @@ CREATE TABLE issuers (
 CREATE TABLE issuer_public_keys (
     sub_name TEXT NOT NULL,
     key_id TEXT NOT NULL,
-    x TEXT NOT NULL,
-    y TEXT NOT NULL,
+    jwks_kty TEXT NOT NULL,
+    jwks_curve TEXT NOT NULL,
+    jwt_alg TEXT NOT NULL,
+    pub_key TEXT NOT NULL,
     PRIMARY KEY (sub_name, key_id),
     FOREIGN KEY (sub_name) REFERENCES issuers(sub_name) ON DELETE CASCADE
 );
@@ -24,15 +26,17 @@ CREATE TABLE issuer_public_keys (
 -- Table for all trust registry public keys. At the moment, only supports ECC P-256.
 CREATE TABLE registry_public_keys (
     key_id TEXT NOT NULL,
-    x TEXT NOT NULL,
-    y TEXT NOT NULL,
+    jwks_kty TEXT NOT NULL,
+    jwks_curve TEXT NOT NULL,
+    jwt_alg TEXT NOT NULL,
+    pub_key TEXT NOT NULL,
     PRIMARY KEY (key_id)
 );
 
 -- Table for all trust registry private keys
 CREATE TABLE registry_private_keys (
     key_id TEXT NOT NULL,
-    d TEXT NOT NULL,
+    priv_key TEXT NOT NULL,
     PRIMARY KEY (key_id),
     FOREIGN KEY (key_id) REFERENCES registry_public_keys(key_id) ON DELETE CASCADE
 );
