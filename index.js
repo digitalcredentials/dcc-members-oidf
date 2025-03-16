@@ -11,14 +11,12 @@ const port = process.env.PORT || 3000;
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
 const THIS_URL = "https://testorganization.example.com"; // For determining internal path for fetch statement (before issuers subfolder)
-const JWKS_KTY = "EC";
-const JWKS_CURVE = "P-256";
-const JWT_ALG = "ES256";
 const TOKEN_DURATION = 60 * 60 * 24 * 1; // in seconds = 1 day
 
 const THIS_ORGANIZATION_NAME = "Test Organization"
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://testorganization.example.com/homepage"
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg=="
+const THIS_ORGANIZATION_POLICY_URI = "https://www.testpolicyuri.com"
 
 // SSL/TLS certificates
 const options = {
@@ -56,8 +54,8 @@ const fetchInternalIssuers = () => {
 function generate_JWT_entity_statement(db, sub_name) {
 
   const isTrustAnchor = sub_name === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
-  const queryKeys = `SELECT key_id, x, y FROM issuer_public_keys WHERE sub_name = ?`;
-  const queryTrustAnchorKeys = `SELECT key_id, x, y FROM registry_public_keys`;
+  const queryKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM issuer_public_keys WHERE sub_name = ?`;
+  const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
 
   const entityStatement = {
       sub: sub_name,
@@ -67,6 +65,7 @@ function generate_JWT_entity_statement(db, sub_name) {
                   organization_name: THIS_ORGANIZATION_NAME,
                   homepage_uri: THIS_ORGANIZATION_HOMEPAGE_URI,
                   logo_uri: THIS_ORGANIZATION_LOGO_URI,
+                  policy_uri: THIS_ORGANIZATION_POLICY_URI,
                   federation_fetch_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/fetch`,
                   federation_list_endpoint: `${THIS_URL}/${TRUST_ANCHOR_NAME}/subordinate_listing`
               } : {
@@ -91,13 +90,16 @@ function generate_JWT_entity_statement(db, sub_name) {
           if (err) return reject({ status: 500, error: 'Database query failed' });
 
           if (isTrustAnchor) {
-              entityStatement.jwks.keys = keys.map(key => ({
-                  kty: JWKS_KTY,
-                  crv: JWKS_CURVE,
-                  kid: key.key_id,
-                  x: key.x,
-                  y: key.y
-              }));
+              entityStatement.jwks.keys = keys.map(key => {
+                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
+                return {
+                    kty: key.jwks_kty,
+                    crv: key.jwks_curve,
+                    kid: key.key_id,
+                    x: pubKey.x, // Extract 'x' from the parsed object
+                    y: pubKey.y  // Extract 'y' from the parsed object
+                };
+            });
               return resolve(entityStatement);
           }
 
@@ -112,13 +114,15 @@ function generate_JWT_entity_statement(db, sub_name) {
               // entityStatement.metadata.associated_did_metadata = {};
               // entityStatement.metadata.associated_did_metadata.did = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
 
-              entityStatement.jwks.keys = keys.map(key => ({
-                  kty: JWKS_KTY,
-                  crv: JWKS_CURVE,
-                  kid: key.key_id,
-                  x: key.x,
-                  y: key.y
-              }));
+              entityStatement.jwks.keys = keys.map(key => {
+                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
+                return {
+                    kty: key.jwks_kty,
+                    crv: key.jwks_curve,
+                    kid: key.key_id,
+                    x: pubKey.x, // Extract 'x' from the parsed object
+                    y: pubKey.y  // Extract 'y' from the parsed object
+                }});
 
               resolve(entityStatement);
           });
@@ -131,8 +135,8 @@ function generate_JWT_entity_statement(db, sub_name) {
 // Uses first key in registry_private_keys and registry_public_keys tables
 function generate_JWT_header_and_signing_JWK_registry(db) {
   return new Promise((resolve, reject) => {
-      const querySigningKeyPrivate = `SELECT d, key_id FROM registry_private_keys ORDER BY key_id DESC LIMIT 1;`;
-      const querySigningKeyPublic = `SELECT x, y FROM registry_public_keys WHERE key_id = ?`;
+      const querySigningKeyPrivate = `SELECT priv_key, key_id FROM registry_private_keys ORDER BY key_id DESC LIMIT 1;`;
+      const querySigningKeyPublic = `SELECT jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys WHERE key_id = ?`;
 
       db.get(querySigningKeyPrivate, (err, private_key_data) => {
           if (err) return reject({ status: 500, error: 'Database query failed' });
@@ -140,20 +144,21 @@ function generate_JWT_header_and_signing_JWK_registry(db) {
           
           db.get(querySigningKeyPublic, [private_key_data['key_id']], (err, public_key_data) => {
               if (err) return reject({ status: 500, error: 'Database query failed' });
-              
+              const pubKey = JSON.parse(public_key_data.pub_key); // Parse the JSON string
+
               resolve({
                   jwt_header: {
                       kid: private_key_data['key_id'],
                       typ: "entity-statement+jwt",
-                      alg: JWT_ALG,
+                      alg: public_key_data['jwt_alg'],
                   },
                   signing_jwk: {
-                      kty: JWKS_KTY,
-                      crv: JWKS_CURVE,
+                      kty: public_key_data.jwks_kty,
+                      crv: public_key_data.jwks_curve,
                       kid: private_key_data['key_id'],
-                      x: public_key_data['x'],
-                      y: public_key_data['y'],
-                      d: private_key_data['d']
+                      x: pubKey['x'],
+                      y: pubKey['y'],
+                      d: private_key_data['priv_key']
                   }
               });
           });
@@ -197,34 +202,6 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
 
 
 
-// Serve well-known openid-federation files for each issuer
-(async () => {
-    try {
-      const issuers = await fetchInternalIssuers();
-      issuers.forEach(({ sub_name }) => {
-        const issuer = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
-
-        // Serve the .well-known/openid-federation for the issuer
-        app.get(`/issuers/${issuer}/.well-known/openid-federation`, async (req, res) => {
-          db.get(`SELECT did_signed_sub_statement FROM issuers WHERE approval_status <> 0 AND sub_name = ?`, [sub_name], (err, issuer) => {
-            if (err) return reject({ status: 500, error: 'Database query failed' });
-            if (!issuer) return reject({ status: 404, error: 'Issuer not found' });
-
-            res.status(200)
-                .set('Content-Type', 'application/entity-statement+jwt')
-                .send(issuer.did_signed_sub_statement);
-
-          });
-        });
-
-        console.log(`Serving .well-known/openid-federation for ${issuer}`);
-      });
-    } catch (error) {
-      console.error('Error fetching issuers:', error);
-    }
-  }
-)();
-
 
 
 // Serve subordinate listing endpoint - queries issuers with approval_status <> 0
@@ -258,7 +235,6 @@ app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
     
     const { jwt_header, signing_jwk } = await generate_JWT_header_and_signing_JWK_registry(db);
     const entityStatement = await generate_JWT_entity_statement(db, subUrl);
-  
     const jwt = await new jose.SignJWT(entityStatement)
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
