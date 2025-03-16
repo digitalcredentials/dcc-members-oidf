@@ -26,17 +26,17 @@ resource "random_string" "suffix" {
 
 ################################## LAMBDA #############################
 
-data "archive_file" "zip-python" {
+data "archive_file" "zip-nodejs" {
   type        = "zip"
-  source_file = "lambda_counter.py"
+  source_file = "lambda_counter.js"
   output_path = "lambda_counter.zip"
 }
 
 resource "aws_s3_object" "lambda-in-s3" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
   key    = "lambda_counter.zip"
-  source = data.archive_file.zip-python.output_path
-  etag   = filemd5(data.archive_file.zip-python.output_path)
+  source = data.archive_file.zip-nodejs.output_path
+  etag   = filemd5(data.archive_file.zip-nodejs.output_path)
 }
 
 resource "aws_lambda_function" "lambda-visitorcounter" {
@@ -44,10 +44,10 @@ resource "aws_lambda_function" "lambda-visitorcounter" {
   s3_bucket     = aws_s3_bucket.lambda_bucket.bucket
   s3_key        = aws_s3_object.lambda-in-s3.key
 
-  runtime = "python3.9"
-  handler = "lambda_counter.lambda_handler"
+  runtime = "nodejs18.x"
+  handler = "lambda_counter.lambdaHandler"
 
-  source_code_hash = data.archive_file.zip-python.output_base64sha256
+  source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
 
   role = aws_iam_role.lambda_exec.arn
 }
