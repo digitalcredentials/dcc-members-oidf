@@ -25,7 +25,9 @@ sqlite3, express, jose
 
 ## How to push the latest SQLite database to AWS:
 
-TODO
+1. `aws configure` and add in the correct AWS IAM information for the service account
+2. `terraform plan` (if fails, run `terraform init`)
+3. `terraform apply`
 
 ## Other tools used:
 
