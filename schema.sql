@@ -6,8 +6,7 @@ CREATE TABLE issuers (
     approval_status INTEGER NOT NULL,
     logo_uri TEXT NOT NULL,
     homepage_uri TEXT NOT NULL,
-    did TEXT,
-    did_signed_sub_statement TEXT
+    signed_sub_statement TEXT
 );
 
 -- Table for all issuer public keys stored in the registry. At the moment, only supports ECC P-256.
