@@ -30,23 +30,6 @@ const options = {
 
 
 
-
-// Query the database for internal issuers (must run before startup)
-const fetchInternalIssuers = () => {
-  return new Promise((resolve, reject) => { // Get only issuers which have this website at the front
-    const query = `SELECT sub_name FROM issuers WHERE approval_status <> 0 AND sub_name LIKE ?`;
-    db.all(query, [`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/%`], (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
-};
-
-
-
 // Helper functions:
 
 // Generate an entity statement, given the subject name. Accepts the trust anchor as a subject.

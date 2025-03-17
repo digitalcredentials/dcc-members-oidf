@@ -53,7 +53,7 @@ with open("testdata.sql", "r", encoding="utf-8") as file:
 json_data = parse_sql_to_json(sql_content)
 
 # Write to a JSON file
-with open("output2.json", "w", encoding="utf-8") as json_file:
+with open("testdata.json", "w", encoding="utf-8") as json_file:
     json.dump(json_data, json_file, indent=4)
 
-print("Conversion completed. Output saved to output2.json.")
+print("Conversion completed. Output saved to testdata.json.")

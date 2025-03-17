@@ -5,3 +5,4 @@ server.key
 *.zip
 *.tfstate
 *.tfstate.*
+testdata.json

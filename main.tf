@@ -13,6 +13,7 @@ provider "aws" {
 
 ######################### CREATE SECRET IN SECRETS MANAGER ######################
 
+/*
 resource "aws_secretsmanager_secret" "test_secret" {
   name        = "test/test2"
   description = "Test secret for storing sensitive information"
@@ -24,6 +25,7 @@ resource "aws_secretsmanager_secret_version" "test_secret_value" {
     value = "abcdefg"
   })
 }
+*/
 
 ###################### CREATE S3 BUCKET ######################
 
@@ -42,13 +44,13 @@ resource "random_string" "suffix" {
 
 data "archive_file" "zip-nodejs" {
   type        = "zip"
-  source_file = "lambda_counter.js"
-  output_path = "lambda_counter.zip"
+  source_file = "lambda_counter2.js"
+  output_path = "lambda_counter2.zip"
 }
 
 resource "aws_s3_object" "lambda-in-s3" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
-  key    = "lambda_counter.zip"
+  key    = "lambda_counter2.zip"
   source = data.archive_file.zip-nodejs.output_path
   etag   = filemd5(data.archive_file.zip-nodejs.output_path)
 }
@@ -59,11 +61,17 @@ resource "aws_lambda_function" "lambda-visitorcounter" {
   s3_key        = aws_s3_object.lambda-in-s3.key
 
   runtime = "nodejs18.x"
-  handler = "lambda_counter.lambdaHandler"
+  handler = "lambda_counter2.lambdaHandler"
 
   source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
 
   role = aws_iam_role.lambda_exec.arn
+
+  environment {
+    variables = {
+      USE_DYNAMODB = "true"
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "lambda-visitorcounter" {
@@ -128,21 +136,47 @@ resource "aws_dynamodb_table" "dynamo-issuers" {
   }
 }
 
+resource "aws_dynamodb_table" "dynamo-issuer_public_keys" {
+  name         = "db-issuer_public_keys"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "sub_name"
+
+  attribute {
+    name = "sub_name"
+    type = "S"
+  }
+}
+
+
+resource "aws_dynamodb_table" "dynamo-registry_public_keys" {
+  name         = "db-registry_public_keys"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "key_id"
+
+  attribute {
+    name = "key_id"
+    type = "S"
+  }
+}
+
+
 ####################### HTTP API GATEWAY #####################
 
-resource "aws_apigatewayv2_api" "api-lambda_counter" {
-  name          = "api-lambda_counter"
+resource "aws_apigatewayv2_api" "api-lambda_counter2" {
+  name          = "api-lambda_counter2"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_stage" "dev" {
-  api_id      = aws_apigatewayv2_api.api-lambda_counter.id
+  api_id      = aws_apigatewayv2_api.api-lambda_counter2.id
   name        = "dev"
   auto_deploy = true
 }
 
 resource "aws_apigatewayv2_integration" "api-lambda" {
-  api_id                 = aws_apigatewayv2_api.api-lambda_counter.id
+  api_id                 = aws_apigatewayv2_api.api-lambda_counter2.id
   integration_uri        = aws_lambda_function.lambda-visitorcounter.invoke_arn
   payload_format_version = "2.0"
   integration_type       = "AWS_PROXY"
@@ -150,14 +184,20 @@ resource "aws_apigatewayv2_integration" "api-lambda" {
 }
 
 resource "aws_apigatewayv2_route" "api-visitor-counter" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter.id
+  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
   route_key = "GET /items/{user}"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-secret" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter.id
+  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
   route_key = "GET /secret"
+  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "api-subordinate-listing" {
+  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  route_key = "GET /issuer-registry/subordinate_listing"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
@@ -166,5 +206,5 @@ resource "aws_lambda_permission" "apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda-visitorcounter.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api-lambda_counter.execution_arn}/*/*/*"
+  source_arn    = "${aws_apigatewayv2_api.api-lambda_counter2.execution_arn}/*/*/*"
 }
