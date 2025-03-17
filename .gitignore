@@ -4,3 +4,4 @@ server.key
 .*
 *.zip
 *.tfstate
+*.tfstate.*

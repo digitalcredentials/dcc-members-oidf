@@ -1,7 +1,10 @@
 const { DynamoDBClient, GetItemCommand, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
 
-const client = new DynamoDBClient({});
+const dynamoClient = new DynamoDBClient({});
+const secretsClient = new SecretsManagerClient({ region: "us-east-1" });
 const tableName = "db-visit-count";
+const secretName = "test/test2";
 
 exports.lambdaHandler = async (event, context) => {
     let body;
@@ -16,7 +19,7 @@ exports.lambdaHandler = async (event, context) => {
             const user = event.pathParameters.user;
 
             // Get current visit count
-            const response = await client.send(new GetItemCommand({
+            const response = await dynamoClient.send(new GetItemCommand({
                 TableName: tableName,
                 Key: { "user": { S: user } }
             }));
@@ -37,9 +40,17 @@ exports.lambdaHandler = async (event, context) => {
             };
 
             // Write visit count back to DynamoDB
-            await client.send(new PutItemCommand({ TableName: tableName, Item: item }));
+            await dynamoClient.send(new PutItemCommand({ TableName: tableName, Item: item }));
 
-            body = message;
+            body = JSON.stringify(message);
+        } else if (routeKey === "GET /secret") {
+            // Retrieve secret from AWS Secrets Manager
+            const secretResponse = await secretsClient.send(new GetSecretValueCommand({
+                SecretId: secretName,
+                VersionStage: "AWSCURRENT"
+            }));
+
+            body = secretResponse.SecretString;
         } else {
             throw new Error(`Unsupported route: ${routeKey}`);
         }
@@ -50,7 +61,7 @@ exports.lambdaHandler = async (event, context) => {
 
     return {
         statusCode,
-        body: JSON.stringify(body),
+        body,
         headers
     };
 };

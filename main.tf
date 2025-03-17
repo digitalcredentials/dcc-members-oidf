@@ -11,6 +11,20 @@ provider "aws" {
   region = "us-east-1" # AWS region where resources will be deployed
 }
 
+######################### CREATE SECRET IN SECRETS MANAGER ######################
+
+resource "aws_secretsmanager_secret" "test_secret" {
+  name        = "test/test2"
+  description = "Test secret for storing sensitive information"
+}
+
+resource "aws_secretsmanager_secret_version" "test_secret_value" {
+  secret_id     = aws_secretsmanager_secret.test_secret.id
+  secret_string = jsonencode({
+    value = "abcdefg"
+  })
+}
+
 ###################### CREATE S3 BUCKET ######################
 
 resource "aws_s3_bucket" "lambda_bucket" {
@@ -83,6 +97,11 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamoroles" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_secretsmanager" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
 ###################### DYNAMODB #####################
 
 resource "aws_dynamodb_table" "dynamo-visitorcounter" {
@@ -93,6 +112,18 @@ resource "aws_dynamodb_table" "dynamo-visitorcounter" {
 
   attribute {
     name = "user"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "dynamo-issuers" {
+  name         = "db-issuers"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "sub_name"
+
+  attribute {
+    name = "sub_name"
     type = "S"
   }
 }
@@ -121,6 +152,12 @@ resource "aws_apigatewayv2_integration" "api-lambda" {
 resource "aws_apigatewayv2_route" "api-visitor-counter" {
   api_id    = aws_apigatewayv2_api.api-lambda_counter.id
   route_key = "GET /items/{user}"
+  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "api-secret" {
+  api_id    = aws_apigatewayv2_api.api-lambda_counter.id
+  route_key = "GET /secret"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
