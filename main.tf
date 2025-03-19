@@ -55,8 +55,8 @@ resource "aws_s3_object" "lambda-in-s3" {
   etag   = filemd5(data.archive_file.zip-nodejs.output_path)
 }
 
-resource "aws_lambda_function" "lambda-visitorcounter" {
-  function_name = "visitor-counter"
+resource "aws_lambda_function" "lambda-issuerregistry" {
+  function_name = "issuer-registry"
   s3_bucket     = aws_s3_bucket.lambda_bucket.bucket
   s3_key        = aws_s3_object.lambda-in-s3.key
 
@@ -74,8 +74,8 @@ resource "aws_lambda_function" "lambda-visitorcounter" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "lambda-visitorcounter" {
-  name              = "/aws/lambda/${aws_lambda_function.lambda-visitorcounter.function_name}"
+resource "aws_cloudwatch_log_group" "lambda-issuerregistry" {
+  name              = "/aws/lambda/${aws_lambda_function.lambda-issuerregistry.function_name}"
   retention_in_days = 30
 }
 
@@ -111,18 +111,6 @@ resource "aws_iam_role_policy_attachment" "lambda_secretsmanager" {
 }
 
 ###################### DYNAMODB #####################
-
-resource "aws_dynamodb_table" "dynamo-visitorcounter" {
-  name         = "db-visit-count"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key = "user"
-
-  attribute {
-    name = "user"
-    type = "S"
-  }
-}
 
 resource "aws_dynamodb_table" "dynamo-issuers" {
   name         = "db-issuers"
@@ -177,22 +165,10 @@ resource "aws_apigatewayv2_stage" "dev" {
 
 resource "aws_apigatewayv2_integration" "api-lambda" {
   api_id                 = aws_apigatewayv2_api.api-lambda_counter2.id
-  integration_uri        = aws_lambda_function.lambda-visitorcounter.invoke_arn
+  integration_uri        = aws_lambda_function.lambda-issuerregistry.invoke_arn
   payload_format_version = "2.0"
   integration_type       = "AWS_PROXY"
   integration_method     = "POST"
-}
-
-resource "aws_apigatewayv2_route" "api-visitor-counter" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
-  route_key = "GET /items/{user}"
-  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
-}
-
-resource "aws_apigatewayv2_route" "api-secret" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
-  route_key = "GET /secret"
-  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-subordinate-listing" {
@@ -201,10 +177,24 @@ resource "aws_apigatewayv2_route" "api-subordinate-listing" {
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "api-issuer-registry" {
+  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  route_key = "GET /issuer-registry/.well-known/openid-federation"
+  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
+  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  route_key = "GET /issuer-registry/fetch"
+  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+}
+
+
+
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda-visitorcounter.function_name
+  function_name = aws_lambda_function.lambda-issuerregistry.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api-lambda_counter2.execution_arn}/*/*/*"
 }

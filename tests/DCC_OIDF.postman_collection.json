@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "718d67de-8b4e-4bdb-a7b7-52f2da091ae0",
+		"_postman_id": "2d2a90d2-a394-4069-bb9a-0e466c936b52",
 		"name": "DCC_OIDF",
 		"description": "**OpenID Spec:** [<b>“Set up web services that can publish signed Entity Statements, one for the URL corresponding to the federation's Entity Identifier returning an Entity Configuration”</b>](https://openid.net/specs/openid-federation-1_0.html#name-setting-up-a-federation)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -604,7 +604,7 @@
 		},
 		{
 			"key": "TEST_ISSUER",
-			"value": "did:cheqd:mainnet:yG5tkXAzVq2p9mNLhz3r8KZuQW4yBXvM",
+			"value": "did:web:twotr.testschool.edu",
 			"type": "string"
 		},
 		{
