@@ -6,6 +6,70 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
 const TRUST_ANCHOR_NAME = "issuer-registry";
+
+const { SignJWT } = require('jose');
+const { TextEncoder } = require('util');
+
+async function generateEntityStatement(sub) {
+    let metadata = {};
+    if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
+        // Trust anchor metadata (hardcoded)
+        metadata = {
+            organization_name: "Issuer Registry Organization",
+            homepage_uri: "https://issuerregistry.example.com",
+            logo_uri: "data:image/png;base64,PLACEHOLDER"
+        };
+    } else {
+        if (USE_DYNAMODB) {
+            const params = {
+                TableName: "db-issuers",
+                FilterExpression: "sub_name = :sub",
+                ExpressionAttributeValues: {
+                    ":sub": { S: sub }
+                }
+            };
+            const result = await dynamoClient.send(new ScanCommand(params));
+            if (result.Items && result.Items.length > 0) {
+                const item = result.Items[0];
+                metadata = {
+                    organization_name: item.organization_name.S,
+                    homepage_uri: item.homepage_uri.S,
+                    logo_uri: item.logo_uri.S
+                };
+            } else {
+                throw new Error("Issuer not found");
+            }
+        } else {
+            metadata = await new Promise((resolve, reject) => {
+                db.get("SELECT organization_name, homepage_uri, logo_uri FROM issuers WHERE sub_name = ?", [sub], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+            if (!metadata) throw new Error("Issuer not found");
+        }
+    }
+    return {
+        sub: sub,
+        metadata: {
+            federation_entity: metadata
+        },
+        iss: `did:web:${TRUST_ANCHOR_NAME}`,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 86400,
+        jti: Math.random().toString(36).slice(2)
+    };
+}
+
+async function signEntityStatement(entityStatement) {
+    const secret = new TextEncoder().encode(ISSUER_REGISTRY_SECRET_KEY);
+    const jwt = await new SignJWT(entityStatement)
+        .setProtectedHeader({ alg: "HS256", typ: "entity-statement+jwt" })
+        .setIssuedAt()
+        .setExpirationTime("1d")
+        .sign(secret);
+    return jwt;
+}
 const tableName = "db-issuers"; // Replace with actual DynamoDB table name
 
 function convertToSQL(queryObj) {
