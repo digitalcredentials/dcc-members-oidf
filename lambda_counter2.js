@@ -75,7 +75,6 @@ async function signEntityStatement(entityStatement) {
 async function generateEntityStatement(sub) {
     let metadata = {};
     if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
-        // Trust anchor metadata (hardcoded)
         metadata = {
             organization_name: "Issuer Registry Organization",
             homepage_uri: "https://issuerregistry.example.com",
@@ -91,16 +90,15 @@ async function generateEntityStatement(sub) {
                 }
             };
             const result = await dynamoClient.send(new ScanCommand(params));
-            if (result.Items && result.Items.length > 0) {
-                const item = result.Items[0];
-                metadata = {
-                    organization_name: item.organization_name.S,
-                    homepage_uri: item.homepage_uri.S,
-                    logo_uri: item.logo_uri.S
-                };
-            } else {
-                throw new Error("Issuer not found");
+            if (!result.Items || result.Items.length === 0) {
+                return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
             }
+            const item = result.Items[0];
+            metadata = {
+                organization_name: item.organization_name.S,
+                homepage_uri: item.homepage_uri.S,
+                logo_uri: item.logo_uri.S
+            };
         } else {
             metadata = await new Promise((resolve, reject) => {
                 db.get("SELECT organization_name, homepage_uri, logo_uri FROM issuers WHERE sub_name = ?", [sub], (err, row) => {
@@ -108,20 +106,21 @@ async function generateEntityStatement(sub) {
                     resolve(row);
                 });
             });
-            if (!metadata) throw new Error("Issuer not found");
+            if (!metadata) {
+                return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
+            }
         }
     }
     return {
         sub: sub,
-        metadata: {
-            federation_entity: metadata
-        },
+        metadata: { federation_entity: metadata },
         iss: `did:web:${TRUST_ANCHOR_NAME}`,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 86400,
         jti: Math.random().toString(36).slice(2)
     };
 }
+
 
 async function signEntityStatement(entityStatement) {
     const secret = new TextEncoder().encode(ISSUER_REGISTRY_SECRET_KEY);
@@ -235,9 +234,13 @@ exports.lambdaHandler = async (event) => {
         }
         try {
             const entityStatement = await generateEntityStatement(subValue);
+            if (entityStatement.statusCode) { // If there is an error
+                return entityStatement; // Return 404 response directly if issuer not found
+            }
             const jwt = await signEntityStatement(entityStatement);
             return {
-                statusCode: 200, headers: { 'Content-Type': 'application/entity-statement+jwt' },
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/entity-statement+jwt' },
                 body: jwt
             };
         } catch (error) {
@@ -258,10 +261,22 @@ if (!USE_DYNAMODB) {
     const app = express();
     const port = process.env.PORT || 3000;
 
-    app.get(`/${TRUST_ANCHOR_NAME}/subordinate_listing`, async (req, res) => {
-        const event = { ...req };
-        const response = await exports.lambdaHandler(event);
-        res.status(response.statusCode).json(JSON.parse(response.body));
+    app.use(express.json()); // Middleware to parse JSON request bodies
+
+    app.all("*", async (req, res) => {
+        const event = {
+            routeKey: `${req.method} ${req.path}`,
+            queryStringParameters: req.query,
+            body: req.body ? JSON.stringify(req.body) : undefined
+        };
+
+        try {
+            const response = await exports.lambdaHandler(event);
+            res.status(response.statusCode).set(response.headers || {}).send(response.body);
+        } catch (error) {
+            console.error("Error processing request:", error);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
     });
 
     const options = {
