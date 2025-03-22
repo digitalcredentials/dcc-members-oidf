@@ -109,12 +109,37 @@ async function generateEntityStatement(sub) {
 
 
 async function signEntityStatement(entityStatement) {
-    const secret = new TextEncoder().encode(ISSUER_REGISTRY_SECRET_KEY);
+    let publicKeyData;
+    if (USE_DYNAMODB) {
+        const keyParams = { TableName: "db-registry_public_keys" };
+        const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
+        publicKeyData = keyResult.Items.find(item => item.key_id.S === "issuerregistry-key1");
+    } else {
+        publicKeyData = await new Promise((resolve, reject) => {
+            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry_public_keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+    }
+    if (!publicKeyData) {
+        throw new Error("Signing public key not found");
+    }
+    const pub = JSON.parse(publicKeyData.pub_key);
+    const signingJWK = {
+        kty: publicKeyData.jwks_kty,
+        crv: publicKeyData.jwks_curve,
+        kid: publicKeyData.key_id,
+        x: pub.x,
+        y: pub.y,
+        d: ISSUER_REGISTRY_SECRET_KEY
+    };
+    const jwtHeader = { alg: "ES256", typ: "entity-statement+jwt", kid: publicKeyData.key_id };
     const jwt = await new SignJWT(entityStatement)
-        .setProtectedHeader({ alg: "ES256", typ: "entity-statement+jwt", "kid": "issuerregistry-key1" })
+        .setProtectedHeader(jwtHeader)
         .setIssuedAt()
         .setExpirationTime("1d")
-        .sign(secret);
+        .sign(signingJWK);
     return jwt;
 }
 const tableName = "db-issuers"; // Replace with actual DynamoDB table name
