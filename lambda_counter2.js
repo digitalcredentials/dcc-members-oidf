@@ -111,7 +111,7 @@ async function generateEntityStatement(sub) {
 async function signEntityStatement(entityStatement) {
     const secret = new TextEncoder().encode(ISSUER_REGISTRY_SECRET_KEY);
     const jwt = await new SignJWT(entityStatement)
-        .setProtectedHeader({ alg: "HS256", typ: "entity-statement+jwt" })
+        .setProtectedHeader({ alg: "ES256", typ: "entity-statement+jwt", "kid": "issuerregistry-key1" })
         .setIssuedAt()
         .setExpirationTime("1d")
         .sign(secret);
