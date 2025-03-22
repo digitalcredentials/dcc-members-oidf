@@ -53,9 +53,53 @@ async function generateEntityStatement(sub) {
             }
         }
     }
+    let jwksKeys = [];
+    if (USE_DYNAMODB) {
+        if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
+            const keyParams = { TableName: "db-registry_public_keys" };
+            const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
+            jwksKeys = keyResult.Items.map(item => ({
+                kty: item.jwks_kty.S,
+                crv: item.jwks_curve.S,
+                kid: item.key_id.S,
+                x: JSON.parse(item.pub_key.S).x,
+                y: JSON.parse(item.pub_key.S).y
+            }));
+        } else {
+            const keyParams = {
+                TableName: "db-issuer_public_keys",
+                FilterExpression: "sub_name = :sub",
+                ExpressionAttributeValues: { ":sub": { S: sub } }
+            };
+            const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
+            jwksKeys = keyResult.Items.map(item => ({
+                kty: item.jwks_kty.S,
+                crv: item.jwks_curve.S,
+                kid: item.key_id.S,
+                x: JSON.parse(item.pub_key.S).x,
+                y: JSON.parse(item.pub_key.S).y
+            }));
+        }
+    } else {
+        const keyQuery = sub === `did:web:${TRUST_ANCHOR_NAME}` ?
+            "SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys" :
+            "SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM issuer_public_keys WHERE sub_name = ?";
+        const keyParams = sub === `did:web:${TRUST_ANCHOR_NAME}` ? [] : [sub];
+        jwksKeys = await new Promise((resolve, reject) => {
+            db.all(keyQuery, keyParams, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+        jwksKeys = jwksKeys.map(key => {
+            const pub = JSON.parse(key.pub_key);
+            return { kty: key.jwks_kty, crv: key.jwks_curve, kid: key.key_id, x: pub.x, y: pub.y };
+        });
+    }
     return {
         sub: sub,
         metadata: { federation_entity: metadata },
+        jwks: { keys: jwksKeys },
         iss: `did:web:${TRUST_ANCHOR_NAME}`,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 86400,
