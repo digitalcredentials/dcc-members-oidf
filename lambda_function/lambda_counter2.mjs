@@ -1,16 +1,24 @@
-const { DynamoDBClient, ScanCommand } = require("@aws-sdk/client-dynamodb");
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const USE_DYNAMODB = process.env.USE_DYNAMODB === "true";
 const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
-ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
+const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
 const TRUST_ANCHOR_NAME = "issuer-registry";
 
-const { SignJWT } = require('jose');
-const { TextEncoder } = require('util');
+
+import { SignJWT } from 'jose';
+
+// import sqlite3 from 'sqlite3';
+import express from 'express';
+import https from 'https';
+import fs from 'fs';
+
 
 async function generateEntityStatement(sub) {
+
+    console.log("in generateEntityStatement");
     let metadata = {};
     if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
         metadata = {
@@ -54,8 +62,9 @@ async function generateEntityStatement(sub) {
         }
     }
     let jwksKeys = [];
-    if (USE_DYNAMODB) {
+    if (USE_DYNAMODB) {        
         if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
+            console.log("in generateEntityStatement USE_DYNAMODB db-registry_public_keys");
             const keyParams = { TableName: "db-registry_public_keys" };
             const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
             jwksKeys = keyResult.Items.map(item => ({
@@ -65,6 +74,9 @@ async function generateEntityStatement(sub) {
                 x: JSON.parse(item.pub_key.S).x,
                 y: JSON.parse(item.pub_key.S).y
             }));
+            console.log("finished generateEntityStatement USE_DYNAMODB db-registry_public_keys");
+            console.log(jwksKeys);
+
         } else {
             const keyParams = {
                 TableName: "db-issuer_public_keys",
@@ -96,6 +108,7 @@ async function generateEntityStatement(sub) {
             return { kty: key.jwks_kty, crv: key.jwks_curve, kid: key.key_id, x: pub.x, y: pub.y };
         });
     }
+    
     return {
         sub: sub,
         metadata: { federation_entity: metadata },
@@ -107,14 +120,55 @@ async function generateEntityStatement(sub) {
     };
 }
 
+function extractSValues(input) {
+    const output = {};
+    for (const key in input) {
+        if (input[key].S) {
+            output[key] = input[key].S;
+        }
+    }
+    return output;
+}
 
 async function signEntityStatement(entityStatement) {
-    const secret = new TextEncoder().encode(ISSUER_REGISTRY_SECRET_KEY);
+    let publicKeyData;
+    let pub;
+    if (USE_DYNAMODB) {
+        console.log("in dynamodb");
+        const keyParams = { TableName: "db-registry_public_keys" };
+        const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
+        publicKeyData = keyResult.Items.find(item => item.key_id.S === "issuerregistry-key1");
+
+        publicKeyData = extractSValues(publicKeyData);
+        pub = JSON.parse(publicKeyData.pub_key);
+    } else {
+        publicKeyData = await new Promise((resolve, reject) => {
+            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry_public_keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        pub = JSON.parse(publicKeyData.pub_key);
+    }
+    if (!publicKeyData) {
+        throw new Error("Signing public key not found");
+    }
+    const signingJWK = {
+        kty: publicKeyData.jwks_kty,
+        crv: publicKeyData.jwks_curve,
+        kid: publicKeyData.key_id,
+        x: pub.x,
+        y: pub.y,
+        d: ISSUER_REGISTRY_SECRET_KEY
+    };
+    console.log(signingJWK);
+    
+    const jwtHeader = { alg: "ES256", typ: "entity-statement+jwt", kid: publicKeyData.key_id };
     const jwt = await new SignJWT(entityStatement)
-        .setProtectedHeader({ alg: "ES256", typ: "entity-statement+jwt", "kid": "issuerregistry-key1" })
+        .setProtectedHeader(jwtHeader)
         .setIssuedAt()
         .setExpirationTime("1d")
-        .sign(secret);
+        .sign(signingJWK);
     return jwt;
 }
 const tableName = "db-issuers"; // Replace with actual DynamoDB table name
@@ -153,7 +207,6 @@ function convertToDynamoDB(queryObj) {
 
 let db;
 if (!USE_DYNAMODB) {
-    const sqlite3 = require("sqlite3").verbose();
     db = new sqlite3.Database("issuerreg.db", (err) => {
         if (err) {
             console.error("Failed to connect to the SQLite database:", err.message);
@@ -164,7 +217,7 @@ if (!USE_DYNAMODB) {
 }
 
 // **Lambda Handler Function**
-exports.lambdaHandler = async (event) => {
+export async function lambdaHandler(event) {
     const routeKey = event.routeKey;
     if (routeKey == `GET /${TRUST_ANCHOR_NAME}/subordinate_listing`) {
 
@@ -203,7 +256,10 @@ exports.lambdaHandler = async (event) => {
     } else if (routeKey == `GET /${TRUST_ANCHOR_NAME}/.well-known/openid-federation`) {
         try {
             const entityStatement = await generateEntityStatement(`did:web:${TRUST_ANCHOR_NAME}`);
+            console.log("entityStatement");
+            console.log(entityStatement);
             const jwt = await signEntityStatement(entityStatement);
+            // console.log(jwt);
             return {
                 statusCode: 200,
                 headers: { 'Content-Type': 'application/entity-statement+jwt' },
@@ -240,9 +296,6 @@ exports.lambdaHandler = async (event) => {
 
 // **Local Express Server (For Testing Only)**
 if (!USE_DYNAMODB) {
-    const express = require("express");
-    const https = require("https");
-    const fs = require("fs");
 
     const app = express();
     const port = process.env.PORT || 3000;
@@ -257,7 +310,7 @@ if (!USE_DYNAMODB) {
         };
 
         try {
-            const response = await exports.lambdaHandler(event);
+            const response = await lambdaHandler(event);
             res.status(response.statusCode).set(response.headers || {}).send(response.body);
         } catch (error) {
             console.error("Error processing request:", error);

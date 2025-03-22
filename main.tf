@@ -44,7 +44,7 @@ resource "random_string" "suffix" {
 
 data "archive_file" "zip-nodejs" {
   type        = "zip"
-  source_file = "lambda_counter2.js"
+  source_dir = "lambda_function"
   output_path = "lambda_counter2.zip"
 }
 
@@ -60,7 +60,7 @@ resource "aws_lambda_function" "lambda-issuerregistry" {
   s3_bucket     = aws_s3_bucket.lambda_bucket.bucket
   s3_key        = aws_s3_object.lambda-in-s3.key
 
-  runtime = "nodejs18.x"
+  runtime = "nodejs22.x"
   handler = "lambda_counter2.lambdaHandler"
 
   source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
