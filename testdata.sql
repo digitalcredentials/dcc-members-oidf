@@ -23,7 +23,7 @@ VALUES
 
 
 -- Insert into registry_private_keys
-INSERT INTO registry_private_keys (key_id, priv_key)
-VALUES 
-    ('issuerregistry-key1', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
+-- INSERT INTO registry_private_keys (key_id, priv_key)
+-- VALUES 
+--     ('issuerregistry-key1', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
     -- ('issuerregistry-key2', 'aaa');

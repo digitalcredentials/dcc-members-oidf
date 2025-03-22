@@ -10,13 +10,13 @@ const port = process.env.PORT || 3000;
 
 const TRUST_ANCHOR_NAME = "issuer-registry";
 const ISSUERS_SUBFOLDER_NAME = "issuers";
-const THIS_URL = "https://testorganization.example.com"; // For determining internal path for fetch statement (before issuers subfolder)
+const THIS_URL = "https://w3447ka4vf.execute-api.us-east-1.amazonaws.com/dev"; // For determining internal path for fetch statement (before issuers subfolder)
 const TOKEN_DURATION = 60 * 60 * 24 * 1; // in seconds = 1 day
 
-const THIS_ORGANIZATION_NAME = "Test Organization"
-const THIS_ORGANIZATION_HOMEPAGE_URI = "https://testorganization.example.com/homepage"
+const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)"
+const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu"
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg=="
-const THIS_ORGANIZATION_POLICY_URI = "https://www.testpolicyuri.com"
+const THIS_ORGANIZATION_POLICY_URI = "https://test.registry.dcconsortium.org/governance-policy"
 
 // SSL/TLS certificates
 const options = {
@@ -93,9 +93,6 @@ function generate_JWT_entity_statement(db, sub_name) {
               entityStatement.metadata.federation_entity.organization_name = issuer.organization_name;
               entityStatement.metadata.federation_entity.homepage_uri = issuer.homepage_uri;
               entityStatement.metadata.federation_entity.logo_uri = issuer.logo_uri;
-
-              // entityStatement.metadata.associated_did_metadata = {};
-              // entityStatement.metadata.associated_did_metadata.did = sub_name.replace(`${THIS_URL}/${ISSUERS_SUBFOLDER_NAME}/`, '');
 
               entityStatement.jwks.keys = keys.map(key => {
                 const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
