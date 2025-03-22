@@ -259,7 +259,8 @@ if (!USE_DYNAMODB) {
     const port = process.env.PORT || 3000;
 
     app.get(`/${TRUST_ANCHOR_NAME}/subordinate_listing`, async (req, res) => {
-        const response = await exports.lambdaHandler({ routeKey: `GET /${TRUST_ANCHOR_NAME}/subordinate_listing` });
+        const event = { routeKey: `GET /${TRUST_ANCHOR_NAME}/subordinate_listing`, ...req };
+        const response = await exports.lambdaHandler(event);
         res.status(response.statusCode).json(JSON.parse(response.body));
     });
 
