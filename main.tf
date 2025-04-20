@@ -198,3 +198,47 @@ resource "aws_lambda_permission" "apigw" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api-lambda_counter2.execution_arn}/*/*/*"
 }
+
+###################### ACM CERTIFICATE ######################
+
+resource "aws_acm_certificate" "registry_cert" {
+  domain_name       = "registry.dcconsortium.org"
+  subject_alternative_names = ["test.registry.dcconsortium.org"]
+  validation_method = "DNS"
+}
+
+###################### API GATEWAY CUSTOM DOMAIN ######################
+
+resource "aws_apigatewayv2_domain_name" "custom_domain" {
+  domain_name = "test.registry.dcconsortium.org"
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate.registry_cert.arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
+}
+
+resource "aws_apigatewayv2_api_mapping" "api_mapping" {
+  api_id      = aws_apigatewayv2_api.api-lambda_counter2.id
+  domain_name = aws_apigatewayv2_domain_name.custom_domain.id
+  stage       = aws_apigatewayv2_stage.dev.id
+}
+
+###################### ROUTE53 DNS RECORDS ######################
+
+data "aws_route53_zone" "dcc_zone" {
+  name = "dcconsortium.org"
+}
+
+resource "aws_route53_record" "api_gateway_record" {
+  zone_id = data.aws_route53_zone.dcc_zone.zone_id
+  name    = "test.registry.dcconsortium.org"
+  type    = "A"
+
+  alias {
+    name                   = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].hosted_zone_id
+    evaluate_target_health = true
+  }
+}

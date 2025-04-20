@@ -10,6 +10,12 @@ A pilot implementation of an issuer registry for learning and employment credent
 
 sqlite3, express, jose
 
+## AWS setup:
+
+Create 2 certificates in Certificate Manager for your subdomain(s):
+registry.dcconsortium.org
+test.registry.dcconsortium.org
+
 ## Key commands:
 
 1. Create/recreate DB schema: `npm run builddb`
@@ -33,3 +39,45 @@ sqlite3, express, jose
 
 - https://emn178.github.io/online-tools/ecdsa/key-generator/ to generate and test EC P-256 keys informally
 - https://jwt.io/ to inspect JWTs
+
+
+
+
+## How to set up your DNS records:
+
+Using `terraform output`, add to your DNS records:
+- First: certificate_validation_cname and subdomain_validation_cname
+- Next: api_gateway_cname
+
+
+## System diagram generation
+
+Can use eraser.io but it's recommended to double-check the outputs.
+
+
+## Note from ChatGPT about different endpoints:
+
+Q: Why is api_gateway_invoke_url = "https://XXXXXXXXX.execute-api.us-east-1.amazonaws.com/dev" but api_gateway_endpoint   = "d-YYYYYYYYYY.execute-api.us-east-1.amazonaws.com" ?
+
+A: 
+Ah, this is a good observation! The difference between these two URLs is due to how API Gateway handles different types of endpoints:
+
+1. `api_gateway_invoke_url` (`https://XXXXXXXXX.execute-api.us-east-1.amazonaws.com/dev`):
+   - This is the default API Gateway endpoint
+   - `XXXXXXXXX` is the API Gateway ID
+   - This URL includes the stage name (`/dev`)
+   - This is the URL you'd use if you're not using a custom domain
+
+2. `api_gateway_endpoint` (`d-YYYYYYYYYY.execute-api.us-east-1.amazonaws.com`):
+   - This is the custom domain endpoint
+   - `d-YYYYYYYYYY` is a different identifier used specifically for custom domains
+   - This is the endpoint that Route53 points to
+   - This endpoint is used when accessing the API through your custom domain (`test.registry.dcconsortium.org`)
+
+The reason for the different identifiers is that API Gateway uses different endpoint configurations for:
+- Default API Gateway endpoints (used when accessing via the API Gateway URL)
+- Custom domain endpoints (used when accessing via your own domain)
+
+Both endpoints ultimately point to the same API Gateway, but they're accessed through different URLs. The custom domain endpoint (`d-YYYYYYYYYY`) is specifically designed to work with Route53 and custom domains, while the default endpoint (`XXXXXXXXX`) is for direct API Gateway access.
+
+When you make requests to your API, you should use the custom domain URL (`https://test.registry.dcconsortium.org/`) rather than either of these internal endpoints.
