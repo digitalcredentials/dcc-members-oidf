@@ -108,7 +108,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/NONEXISTENT_ISSUER",
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub=NONEXISTENT_ISSUER",
 							"host": [
 								"{{TEST_URL}}"
 							],
@@ -119,7 +119,7 @@
 							"query": [
 								{
 									"key": "sub",
-									"value": "{{THIS_URL}}/{{ISSUERS_SUBFOLDER_NAME}}/NONEXISTENT_ISSUER"
+									"value": "NONEXISTENT_ISSUER"
 								}
 							]
 						}
@@ -160,10 +160,6 @@
 					"response": []
 				}
 			]
-		},
-		{
-			"name": "[in progress] test_existence_did_trust_mark_search_endpoints",
-			"item": []
 		},
 		{
 			"name": "entity_statement_contents",
@@ -254,23 +250,29 @@
 									"eval( pm.collectionVariables.get('parsejwt_code_RS') )",
 									"",
 									"jwt = pm.response.text();",
+									"console.log(parseJwt(jwt,1));",
 									"",
-									"",
-									"pm.test(\"Check ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
+									"pm.test(\"Check FEDERATION_ENTITY_ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
 									"    var payload = parseJwt(jwt, 1);",
-									"    var expectedKeys = eval(pm.collectionVariables.get('ENTITY_STATEMENT_MANDATORY_KEYS'));",
+									"    var expectedKeys = eval(pm.collectionVariables.get('FEDERATION_ENTITY_ENTITY_STATEMENT_MANDATORY_KEYS'));",
 									"    expectedKeys.forEach(function (key) {",
 									"        pm.expect(payload).to.have.property(key);",
 									"    });",
 									"});",
 									"",
-									"pm.test(\"Check METADATA_FEDERATION_ENTITY_MANDATORY_KEYS in JWT Federation Entity object\", function () {",
+									"",
+									"pm.test(\"Check METADATA_MANDATORY_KEYS in JWT metadata\", function () {",
 									"    var payload = parseJwt(jwt, 1);",
-									"    var metadata = payload.metadata.federation_entity;",
-									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_FEDERATION_ENTITY_MANDATORY_KEYS'));",
+									"    var metadata = payload.metadata;",
+									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_MANDATORY_KEYS'));",
 									"    ",
-									"    expectedKeys.forEach(function (key) {",
-									"        pm.expect(metadata).to.have.property(key);",
+									"    expectedKeys.forEach(function (keyObject) {",
+									"        for (var key in keyObject) {",
+									"            pm.expect(metadata).to.have.property(key);",
+									"            keyObject[key].forEach(function (subKey) {",
+									"                pm.expect(metadata[key]).to.have.property(subKey);",
+									"            });",
+									"        }",
 									"    });",
 									"});",
 									"",
@@ -405,7 +407,7 @@
 					"response": []
 				},
 				{
-					"name": "Correct contents of Fetch JWT",
+					"name": "Correct contents of ROR and CTID Fetch JWT",
 					"event": [
 						{
 							"listen": "test",
@@ -416,11 +418,119 @@
 									"eval( pm.collectionVariables.get('parsejwt_code_RS') )",
 									"",
 									"jwt = pm.response.text();",
+									"console.log(parseJwt(jwt,1));",
 									"",
 									"",
-									"pm.test(\"Check ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
+									"pm.test(\"Check METADATA_MANDATORY_KEYS in JWT metadata\", function () {",
 									"    var payload = parseJwt(jwt, 1);",
-									"    var expectedKeys = eval(pm.collectionVariables.get('ENTITY_STATEMENT_MANDATORY_KEYS'));",
+									"    var metadata = payload.metadata;",
+									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_MANDATORY_KEYS'));",
+									"    ",
+									"    expectedKeys.forEach(function (keyObject) {",
+									"        for (var key in keyObject) {",
+									"            pm.expect(metadata).to.have.property(key);",
+									"            keyObject[key].forEach(function (subKey) {",
+									"                pm.expect(metadata[key]).to.have.property(subKey);",
+									"            });",
+									"        }",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Check SUBORDINATE_ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
+									"    var payload = parseJwt(jwt, 1);",
+									"    var expectedKeys = eval(pm.collectionVariables.get('SUBORDINATE_ENTITY_STATEMENT_MANDATORY_KEYS'));",
+									"    expectedKeys.forEach(function (key) {",
+									"        pm.expect(payload).to.have.property(key);",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Check METADATA_ROR_CTID_MANDATORY_KEYS in JWT\", function () {",
+									"    var payload = parseJwt(jwt, 1);",
+									"    var metadata = payload.metadata;",
+									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_ROR_CTID_MANDATORY_KEYS'));",
+									"",
+									"    expectedKeys.forEach(function (keyObject) {",
+									"        for (var key in keyObject) {",
+									"            pm.expect(metadata).to.have.property(key);",
+									"            keyObject[key].forEach(function (subKey) {",
+									"                pm.expect(metadata[key]).to.have.property(subKey);",
+									"            });",
+									"        }",
+									"    });",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"require('atob')"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{TEST_ISSUER_WITH_ROR_AND_CTID}}",
+							"host": [
+								"{{TEST_URL}}"
+							],
+							"path": [
+								"{{TRUST_ANCHOR_NAME}}",
+								"fetch"
+							],
+							"query": [
+								{
+									"key": "sub",
+									"value": "{{TEST_ISSUER_WITH_ROR_AND_CTID}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Correct contents of Fetch JWT Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"// Custom code to parse JWT by section",
+									"eval( pm.collectionVariables.get('parsejwt_code_RS') )",
+									"",
+									"jwt = pm.response.text();",
+									"console.log(parseJwt(jwt,1));",
+									"",
+									"",
+									"",
+									"pm.test(\"Check METADATA_MANDATORY_KEYS in JWT metadata\", function () {",
+									"    var payload = parseJwt(jwt, 1);",
+									"    var metadata = payload.metadata;",
+									"    var expectedKeys = eval(pm.collectionVariables.get('METADATA_MANDATORY_KEYS'));",
+									"    ",
+									"    expectedKeys.forEach(function (keyObject) {",
+									"        for (var key in keyObject) {",
+									"            pm.expect(metadata).to.have.property(key);",
+									"            keyObject[key].forEach(function (subKey) {",
+									"                pm.expect(metadata[key]).to.have.property(subKey);",
+									"            });",
+									"        }",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Check SUBORDINATE_ENTITY_STATEMENT_MANDATORY_KEYS in JWT\", function () {",
+									"    var payload = parseJwt(jwt, 1);",
+									"    var expectedKeys = eval(pm.collectionVariables.get('SUBORDINATE_ENTITY_STATEMENT_MANDATORY_KEYS'));",
 									"    expectedKeys.forEach(function (key) {",
 									"        pm.expect(payload).to.have.property(key);",
 									"    });",
@@ -447,7 +557,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{TEST_ISSUER}}",
+							"raw": "{{TEST_URL}}/{{TRUST_ANCHOR_NAME}}/fetch?sub={{TEST_ISSUER_WITH_ROR_AND_CTID}}",
 							"host": [
 								"{{TEST_URL}}"
 							],
@@ -458,7 +568,7 @@
 							"query": [
 								{
 									"key": "sub",
-									"value": "{{TEST_ISSUER}}"
+									"value": "{{TEST_ISSUER_WITH_ROR_AND_CTID}}"
 								}
 							]
 						}
@@ -589,7 +699,7 @@
 	"variable": [
 		{
 			"key": "TEST_URL",
-			"value": "https://localhost:3000",
+			"value": "https://test.registry.dcconsortium.org",
 			"type": "string"
 		},
 		{
@@ -608,13 +718,28 @@
 			"type": "string"
 		},
 		{
-			"key": "ENTITY_STATEMENT_MANDATORY_KEYS",
+			"key": "TEST_ISSUER_WITH_ROR_AND_CTID",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "SUBORDINATE_ENTITY_STATEMENT_MANDATORY_KEYS",
 			"value": "[\"sub\", \"metadata\", \"jwks\", \"iss\", \"exp\", \"iat\", \"jti\"]",
 			"type": "string"
 		},
 		{
-			"key": "METADATA_FEDERATION_ENTITY_MANDATORY_KEYS",
+			"key": "FEDERATION_ENTITY_ENTITY_STATEMENT_MANDATORY_KEYS",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "METADATA_MANDATORY_KEYS",
 			"value": "[\"homepage_uri\", \"logo_uri\", \"policy_uri\", \"organization_name\"]",
+			"type": "string"
+		},
+		{
+			"key": "METADATA_ROR_CTID_MANDATORY_KEYS",
+			"value": "",
 			"type": "string"
 		},
 		{
