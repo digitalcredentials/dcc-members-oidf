@@ -124,19 +124,6 @@ resource "aws_dynamodb_table" "dynamo-issuers" {
   }
 }
 
-resource "aws_dynamodb_table" "dynamo-issuer_public_keys" {
-  name         = "db-issuer_public_keys"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key = "sub_name"
-
-  attribute {
-    name = "sub_name"
-    type = "S"
-  }
-}
-
-
 resource "aws_dynamodb_table" "dynamo-registry_public_keys" {
   name         = "db-registry_public_keys"
   billing_mode = "PAY_PER_REQUEST"
@@ -148,7 +135,6 @@ resource "aws_dynamodb_table" "dynamo-registry_public_keys" {
     type = "S"
   }
 }
-
 
 ####################### HTTP API GATEWAY #####################
 
@@ -188,8 +174,6 @@ resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
   route_key = "GET /issuer-registry/fetch"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
-
-
 
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"

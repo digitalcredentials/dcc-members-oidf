@@ -35,9 +35,7 @@ const options = {
 // Generate an entity statement, given the subject name. Accepts the trust anchor as a subject.
 // Otherwise searches for a subject in the issuers table.
 function generate_JWT_entity_statement(db, sub_name) {
-
   const isTrustAnchor = sub_name === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
-  const queryKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM issuer_public_keys WHERE sub_name = ?`;
   const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
 
   const entityStatement = {
@@ -58,35 +56,36 @@ function generate_JWT_entity_statement(db, sub_name) {
               })
           }
       },
-      jwks: { keys: [] },
       iss: `${THIS_URL}/${TRUST_ANCHOR_NAME}`,
       exp: Math.floor(Date.now() / 1000) + TOKEN_DURATION,
       iat: Math.floor(Date.now() / 1000),
       jti: require('crypto').randomBytes(16).toString('hex')
   };
 
+  // Only include jwks for trust anchor
+  if (isTrustAnchor) {
+      entityStatement.jwks = { keys: [] };
+  }
+
   return new Promise((resolve, reject) => {
-      const query = isTrustAnchor ? queryTrustAnchorKeys : queryKeys;
-      const params = isTrustAnchor ? [] : [sub_name];
+      if (isTrustAnchor) {
+          db.all(queryTrustAnchorKeys, [], (err, keys) => {
+              if (err) return reject({ status: 500, error: 'Database query failed' });
 
-      db.all(query, params, (err, keys) => {
-          if (err) return reject({ status: 500, error: 'Database query failed' });
-
-          if (isTrustAnchor) {
               entityStatement.jwks.keys = keys.map(key => {
-                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
-                return {
-                    kty: key.jwks_kty,
-                    crv: key.jwks_curve,
-                    kid: key.key_id,
-                    x: pubKey.x, // Extract 'x' from the parsed object
-                    y: pubKey.y  // Extract 'y' from the parsed object
-                };
-            });
+                  const pubKey = JSON.parse(key.pub_key);
+                  return {
+                      kty: key.jwks_kty,
+                      crv: key.jwks_curve,
+                      kid: key.key_id,
+                      x: pubKey.x,
+                      y: pubKey.y
+                  };
+              });
               return resolve(entityStatement);
-          }
-
-          db.get(`SELECT organization_name, homepage_uri, logo_uri FROM issuers WHERE sub_name = ?`, [sub_name], (err, issuer) => {
+          });
+      } else {
+          db.get(`SELECT organization_name, homepage_uri, logo_uri, legal_name, ctid, rorid FROM issuers WHERE sub_name = ?`, [sub_name], (err, issuer) => {
               if (err) return reject({ status: 500, error: 'Database query failed' });
               if (!issuer) return reject({ status: 404, error: 'Issuer not found' });
 
@@ -94,22 +93,32 @@ function generate_JWT_entity_statement(db, sub_name) {
               entityStatement.metadata.federation_entity.homepage_uri = issuer.homepage_uri;
               entityStatement.metadata.federation_entity.logo_uri = issuer.logo_uri;
 
-              entityStatement.jwks.keys = keys.map(key => {
-                const pubKey = JSON.parse(key.pub_key); // Parse the JSON string
-                return {
-                    kty: key.jwks_kty,
-                    crv: key.jwks_curve,
-                    kid: key.key_id,
-                    x: pubKey.x, // Extract 'x' from the parsed object
-                    y: pubKey.y  // Extract 'y' from the parsed object
-                }});
+              // Add new metadata fields
+              if (issuer.legal_name) {
+                  entityStatement.metadata.institution_additional_information = {
+                      legal_name: issuer.legal_name
+                  };
+              }
+
+              if (issuer.ctid) {
+                  entityStatement.metadata.credential_registry_entity = {
+                      ctid: issuer.ctid,
+                      ce_url: `https://credentialengineregistry.org/resources/${issuer.ctid}`
+                  };
+              }
+
+              if (issuer.rorid) {
+                  entityStatement.metadata.ror_entity = {
+                      rorid: issuer.rorid,
+                      ror_url: `https://ror.org/${issuer.rorid}`
+                  };
+              }
 
               resolve(entityStatement);
           });
-      });
+      }
   });
 }
-
 
 // Generate the JWT header and full private JWK for JWT signing. For signing on behalf of the issuer registry.
 // Uses first key in registry_private_keys and registry_public_keys tables
@@ -184,9 +193,9 @@ const db = new sqlite3.Database('issuerreg.db', (err) => {
 
 
 
-// Serve subordinate listing endpoint - queries issuers with approval_status <> 0
+// Serve subordinate listing endpoint - queries all issuers
 app.get(`/${TRUST_ANCHOR_NAME}/subordinate_listing`, async (req, res) => {
-  const query = `SELECT sub_name FROM issuers WHERE approval_status <> 0`;
+  const query = `SELECT sub_name FROM issuers`;
 
   db.all(query, [], (err, rows) => {
     if (err) {
@@ -219,8 +228,7 @@ app.get(`/${TRUST_ANCHOR_NAME}/fetch`, async (req, res) => {
         .setProtectedHeader(jwt_header)
         .sign(signing_jwk);
     
-    
-      res.status(200)
+    res.status(200)
       .set('Content-Type', 'application/entity-statement+jwt')
       .send(jwt);
   } catch (error) {

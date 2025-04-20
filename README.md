@@ -19,7 +19,7 @@ test.registry.dcconsortium.org
 ## Key commands:
 
 1. Create/recreate DB schema: `npm run builddb`
-2. Load/reload test data into DB: `npm run loadtestdata`
+2. Load/reload test data into DB: `npm run localtestdata`
 3. Generate local server keys (HTTPS): `npm run keygen`
 4. Launch webservice: `npm run webservice`
 5. Test endpoint(s): `curl -X GET http://localhost:3000/{{TRUST_ANCHOR_NAME}}/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/issuer-registry/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests.
