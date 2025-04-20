@@ -5,31 +5,90 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
+const THIS_URL = "https://w3447ka4vf.execute-api.us-east-1.amazonaws.com/dev"; // For determining internal path for fetch statement (before issuers subfolder)
 const TRUST_ANCHOR_NAME = "issuer-registry";
-
+const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)";
+const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
+const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
+const THIS_ORGANIZATION_POLICY_URI = "https://test.registry.dcconsortium.org/governance-policy";
+const THIS_ORGANIZATION_LEGAL_NAME = "Digital Credentials Consortium, Inc.";
 
 import { SignJWT } from 'jose';
 
-// import sqlite3 from 'sqlite3';
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
 
 
 async function generateEntityStatement(sub) {
-
     console.log("in generateEntityStatement");
-    let metadata = {};
-    if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
-        metadata = {
-            organization_name: "Issuer Registry Organization",
-            homepage_uri: "https://issuerregistry.example.com",
-            logo_uri: "data:image/png;base64,PLACEHOLDER",
-            policy_uri: "https://issuerregistry.example.com/governance-policy",
-            federation_fetch_endpoint: `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/fetch`,
-            federation_list_endpoint:
-                `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/subordinate_listing`
-        };
+    const isTrustAnchor = sub === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
+    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
+
+    const entityStatement = {
+        sub: sub,
+        metadata: {
+            federation_entity: {
+                ...(isTrustAnchor ? {
+                    organization_name: THIS_ORGANIZATION_NAME,
+                    homepage_uri: THIS_ORGANIZATION_HOMEPAGE_URI,
+                    logo_uri: THIS_ORGANIZATION_LOGO_URI,
+                    policy_uri: THIS_ORGANIZATION_POLICY_URI,
+                    federation_fetch_endpoint: `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/fetch`,
+                    federation_list_endpoint: `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/subordinate_listing`
+                } : {
+                    organization_name: '',
+                    homepage_uri: '',
+                    logo_uri: ''
+                })
+            },
+            ...(isTrustAnchor ? {
+                institution_additional_information: {
+                    legal_name: THIS_ORGANIZATION_LEGAL_NAME
+                }
+            } : {})
+        },
+        iss: `${THIS_URL}/${TRUST_ANCHOR_NAME}`,
+        exp: Math.floor(Date.now() / 1000) + 86400,
+        iat: Math.floor(Date.now() / 1000),
+        jti: Math.random().toString(36).slice(2)
+    };
+
+    // Only include jwks for trust anchor
+    if (isTrustAnchor) {
+        entityStatement.jwks = { keys: [] };
+    }
+
+    if (isTrustAnchor) {
+        if (USE_DYNAMODB) {
+            const keyParams = { TableName: "db-registry_public_keys" };
+            const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
+            entityStatement.jwks.keys = keyResult.Items.map(item => ({
+                kty: item.jwks_kty.S,
+                crv: item.jwks_curve.S,
+                kid: item.key_id.S,
+                x: JSON.parse(item.pub_key.S).x,
+                y: JSON.parse(item.pub_key.S).y
+            }));
+        } else {
+            const keys = await new Promise((resolve, reject) => {
+                db.all(queryTrustAnchorKeys, [], (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                });
+            });
+            entityStatement.jwks.keys = keys.map(key => {
+                const pubKey = JSON.parse(key.pub_key);
+                return {
+                    kty: key.jwks_kty,
+                    crv: key.jwks_curve,
+                    kid: key.key_id,
+                    x: pubKey.x,
+                    y: pubKey.y
+                };
+            });
+        }
+        return entityStatement;
     } else {
         if (USE_DYNAMODB) {
             const params = {
@@ -44,80 +103,67 @@ async function generateEntityStatement(sub) {
                 return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
             }
             const item = result.Items[0];
-            metadata = {
-                organization_name: item.organization_name.S,
-                homepage_uri: item.homepage_uri.S,
-                logo_uri: item.logo_uri.S
-            };
+            entityStatement.metadata.federation_entity.organization_name = item.organization_name.S;
+            entityStatement.metadata.federation_entity.homepage_uri = item.homepage_uri.S;
+            entityStatement.metadata.federation_entity.logo_uri = item.logo_uri.S;
+
+            if (item.legal_name) {
+                entityStatement.metadata.institution_additional_information = {
+                    legal_name: item.legal_name.S
+                };
+            }
+
+            if (item.ctid) {
+                entityStatement.metadata.credential_registry_entity = {
+                    ctid: item.ctid.S,
+                    ce_url: `https://credentialengineregistry.org/resources/${item.ctid.S}`
+                };
+            }
+
+            if (item.rorid) {
+                entityStatement.metadata.ror_entity = {
+                    rorid: item.rorid.S,
+                    ror_url: `https://ror.org/${item.rorid.S}`
+                };
+            }
         } else {
-            metadata = await new Promise((resolve, reject) => {
-                db.get("SELECT organization_name, homepage_uri, logo_uri FROM issuers WHERE sub_name = ?", [sub], (err, row) => {
+            const issuer = await new Promise((resolve, reject) => {
+                console.log(sub);
+                db.get(`SELECT organization_name, homepage_uri, logo_uri, legal_name, ctid, rorid FROM issuers WHERE sub_name = ?`, [sub], (err, row) => {
                     if (err) return reject(err);
                     resolve(row);
                 });
             });
-            if (!metadata) {
+            if (!issuer) {
                 return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
             }
-        }
-    }
-    let jwksKeys = [];
-    if (USE_DYNAMODB) {        
-        if (sub === `did:web:${TRUST_ANCHOR_NAME}`) {
-            console.log("in generateEntityStatement USE_DYNAMODB db-registry_public_keys");
-            const keyParams = { TableName: "db-registry_public_keys" };
-            const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
-            jwksKeys = keyResult.Items.map(item => ({
-                kty: item.jwks_kty.S,
-                crv: item.jwks_curve.S,
-                kid: item.key_id.S,
-                x: JSON.parse(item.pub_key.S).x,
-                y: JSON.parse(item.pub_key.S).y
-            }));
-            console.log("finished generateEntityStatement USE_DYNAMODB db-registry_public_keys");
-            console.log(jwksKeys);
 
-        } else {
-            const keyParams = {
-                TableName: "db-issuer_public_keys",
-                FilterExpression: "sub_name = :sub",
-                ExpressionAttributeValues: { ":sub": { S: sub } }
-            };
-            const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
-            jwksKeys = keyResult.Items.map(item => ({
-                kty: item.jwks_kty.S,
-                crv: item.jwks_curve.S,
-                kid: item.key_id.S,
-                x: JSON.parse(item.pub_key.S).x,
-                y: JSON.parse(item.pub_key.S).y
-            }));
+            entityStatement.metadata.federation_entity.organization_name = issuer.organization_name;
+            entityStatement.metadata.federation_entity.homepage_uri = issuer.homepage_uri;
+            entityStatement.metadata.federation_entity.logo_uri = issuer.logo_uri;
+
+            if (issuer.legal_name) {
+                entityStatement.metadata.institution_additional_information = {
+                    legal_name: issuer.legal_name
+                };
+            }
+
+            if (issuer.ctid) {
+                entityStatement.metadata.credential_registry_entity = {
+                    ctid: issuer.ctid,
+                    ce_url: `https://credentialengineregistry.org/resources/${issuer.ctid}`
+                };
+            }
+
+            if (issuer.rorid) {
+                entityStatement.metadata.ror_entity = {
+                    rorid: issuer.rorid,
+                    ror_url: `https://ror.org/${issuer.rorid}`
+                };
+            }
         }
-    } else {
-        const keyQuery = sub === `did:web:${TRUST_ANCHOR_NAME}` ?
-            "SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys" :
-            "SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM issuer_public_keys WHERE sub_name = ?";
-        const keyParams = sub === `did:web:${TRUST_ANCHOR_NAME}` ? [] : [sub];
-        jwksKeys = await new Promise((resolve, reject) => {
-            db.all(keyQuery, keyParams, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-        jwksKeys = jwksKeys.map(key => {
-            const pub = JSON.parse(key.pub_key);
-            return { kty: key.jwks_kty, crv: key.jwks_curve, kid: key.key_id, x: pub.x, y: pub.y };
-        });
+        return entityStatement;
     }
-    
-    return {
-        sub: sub,
-        metadata: { federation_entity: metadata },
-        jwks: { keys: jwksKeys },
-        iss: `did:web:${TRUST_ANCHOR_NAME}`,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 86400,
-        jti: Math.random().toString(36).slice(2)
-    };
 }
 
 function extractSValues(input) {
@@ -173,12 +219,6 @@ async function signEntityStatement(entityStatement) {
 }
 const tableName = "db-issuers"; // Replace with actual DynamoDB table name
 
-function convertToSQL(queryObj) {
-    const { columns, table_name, comparison_var, comparison, comparison_val } = queryObj;
-    const columnStr = columns.join(', ');
-    return `SELECT ${columnStr} FROM ${table_name} WHERE ${comparison_var} ${comparison} ${comparison_val};`;
-}
-
 function convertToDynamoDB(queryObj) {
     const { columns, table_name, comparison_var, comparison, comparison_val } = queryObj;
 
@@ -207,7 +247,8 @@ function convertToDynamoDB(queryObj) {
 
 let db;
 if (!USE_DYNAMODB) {
-    db = new sqlite3.Database("issuerreg.db", (err) => {
+    const sqlite3 = await import('sqlite3');
+    db = new sqlite3.default.Database("issuerreg.db", (err) => {
         if (err) {
             console.error("Failed to connect to the SQLite database:", err.message);
         } else {
@@ -220,25 +261,18 @@ if (!USE_DYNAMODB) {
 export async function lambdaHandler(event) {
     const routeKey = event.routeKey;
     if (routeKey == `GET /${TRUST_ANCHOR_NAME}/subordinate_listing`) {
-
-        const queryObj = {
-            columns: ['sub_name'],
-            table_name: 'issuers',
-            comparison_var: 'approval_status',
-            comparison: '<>',
-            comparison_val: '0'
-        };
-
         try {
             if (USE_DYNAMODB) {
-                const command = new ScanCommand(convertToDynamoDB(queryObj));
+                const command = new ScanCommand({
+                    TableName: "db-issuers",
+                    ProjectionExpression: "sub_name"
+                });
                 const { Items } = await dynamoClient.send(command);
                 const subNames = Items.map((item) => item.sub_name.S);
                 return { statusCode: 200, body: JSON.stringify(subNames) };
             } else {
                 return new Promise((resolve) => {
-                    const query = convertToSQL(queryObj);
-                    db.all(query, [], (err, rows) => {
+                    db.all("SELECT sub_name FROM issuers", [], (err, rows) => {
                         if (err) {
                             console.error("Error executing query:", err.message);
                             resolve({ statusCode: 500, body: JSON.stringify({ error: "Database query failed" }) });
@@ -255,7 +289,7 @@ export async function lambdaHandler(event) {
         }
     } else if (routeKey == `GET /${TRUST_ANCHOR_NAME}/.well-known/openid-federation`) {
         try {
-            const entityStatement = await generateEntityStatement(`did:web:${TRUST_ANCHOR_NAME}`);
+            const entityStatement = await generateEntityStatement(`${THIS_URL}/${TRUST_ANCHOR_NAME}`);
             console.log("entityStatement");
             console.log(entityStatement);
             const jwt = await signEntityStatement(entityStatement);
