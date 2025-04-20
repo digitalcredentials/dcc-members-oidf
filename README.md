@@ -20,7 +20,7 @@ test.registry.dcconsortium.org
 
 1. Create/recreate DB schema: `npm run builddb`
 2. Load/reload test data into DB: `npm run loadtestdata`
-3. Generate server keys (HTTPS): `npm run keygen`
+3. Generate local server keys (HTTPS): `npm run keygen`
 4. Launch webservice: `npm run webservice`
 5. Test endpoint(s): `curl -X GET http://localhost:3000/{{TRUST_ANCHOR_NAME}}/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/issuer-registry/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests.
 
@@ -29,11 +29,19 @@ test.registry.dcconsortium.org
 - Generate a sample set of ECDSA private and public keys: `./scripts/generate_ecdsa_keys.sh`
 - Check to see if a sample set of ECDSA private and public keys are valid: `python3 ./test.py privatekey x y`
 
-## How to push the latest SQLite database to AWS:
+## How to push the latest test database data to AWS:
 
-1. `aws configure` and add in the correct AWS IAM information for the service account
-2. `terraform plan` (if fails, run `terraform init`)
-3. `terraform apply`
+1. Run `python ./convert.py`, which will convert `testdata.sql` (suitable for SQLlite) into `testdata.json` (suitable for DynamoDB)
+2. Run `aws dynamodb batch-write-item --request-items file://testdata.json`, which will load that data into AWS
+
+## How to update the test database schema:
+
+1. On local, update `schema.sql` and `testdata.sql`
+2. On test and prod AWS, update `aws_dynamodb_table items` in `main.tf`
+3. `aws configure` and add in the correct AWS IAM information for the service account
+4. `terraform plan` (if fails, run `terraform init`)
+5. `terraform apply`
+6. Re-eun the above section "How to push the latest test database to AWS"
 
 ## Other tools used:
 
