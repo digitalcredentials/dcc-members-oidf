@@ -6,7 +6,6 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
 const THIS_URL = "https://w3447ka4vf.execute-api.us-east-1.amazonaws.com/dev"; // For determining internal path for fetch statement (before issuers subfolder)
-const TRUST_ANCHOR_NAME = "issuer-registry";
 const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)";
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
@@ -22,7 +21,7 @@ import fs from 'fs';
 
 async function generateEntityStatement(sub) {
     console.log("in generateEntityStatement");
-    const isTrustAnchor = sub === `${THIS_URL}/${TRUST_ANCHOR_NAME}`;
+    const isTrustAnchor = sub === THIS_URL;
     const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
 
     const entityStatement = {
@@ -34,8 +33,8 @@ async function generateEntityStatement(sub) {
                     homepage_uri: THIS_ORGANIZATION_HOMEPAGE_URI,
                     logo_uri: THIS_ORGANIZATION_LOGO_URI,
                     policy_uri: THIS_ORGANIZATION_POLICY_URI,
-                    federation_fetch_endpoint: `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/fetch`,
-                    federation_list_endpoint: `https://issuerregistry.example.com/${TRUST_ANCHOR_NAME}/subordinate_listing`
+                    federation_fetch_endpoint: `https://issuerregistry.example.com/fetch`,
+                    federation_list_endpoint: `https://issuerregistry.example.com/subordinate_listing`
                 } : {
                     organization_name: '',
                     homepage_uri: '',
@@ -48,7 +47,7 @@ async function generateEntityStatement(sub) {
                 }
             } : {})
         },
-        iss: `${THIS_URL}/${TRUST_ANCHOR_NAME}`,
+        iss: THIS_URL,
         exp: Math.floor(Date.now() / 1000) + 86400,
         iat: Math.floor(Date.now() / 1000),
         jti: Math.random().toString(36).slice(2)
@@ -260,7 +259,7 @@ if (!USE_DYNAMODB) {
 // **Lambda Handler Function**
 export async function lambdaHandler(event) {
     const routeKey = event.routeKey;
-    if (routeKey == `GET /${TRUST_ANCHOR_NAME}/subordinate_listing`) {
+    if (routeKey == `GET /subordinate_listing`) {
         try {
             if (USE_DYNAMODB) {
                 const command = new ScanCommand({
@@ -287,13 +286,12 @@ export async function lambdaHandler(event) {
             console.error("Error:", error.message);
             return { statusCode: 500, body: JSON.stringify({ error: "Failed to process request" }) };
         }
-    } else if (routeKey == `GET /${TRUST_ANCHOR_NAME}/.well-known/openid-federation`) {
+    } else if (routeKey == `GET /.well-known/openid-federation`) {
         try {
-            const entityStatement = await generateEntityStatement(`${THIS_URL}/${TRUST_ANCHOR_NAME}`);
+            const entityStatement = await generateEntityStatement(THIS_URL);
             console.log("entityStatement");
             console.log(entityStatement);
             const jwt = await signEntityStatement(entityStatement);
-            // console.log(jwt);
             return {
                 statusCode: 200,
                 headers: { 'Content-Type': 'application/entity-statement+jwt' },
@@ -303,7 +301,7 @@ export async function lambdaHandler(event) {
             console.error("Error:", error.message);
             return { statusCode: 500, body: JSON.stringify({ error: "Failed to process request" }) };
         }
-    } else if (routeKey == `GET /${TRUST_ANCHOR_NAME}/fetch`) {
+    } else if (routeKey == `GET /fetch`) {
         const subValue = event.queryStringParameters?.sub;
         if (!subValue) {
             return { statusCode: 400, body: JSON.stringify({ error: "Missing sub parameter" }) };

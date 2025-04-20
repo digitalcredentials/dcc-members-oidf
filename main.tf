@@ -159,19 +159,19 @@ resource "aws_apigatewayv2_integration" "api-lambda" {
 
 resource "aws_apigatewayv2_route" "api-subordinate-listing" {
   api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
-  route_key = "GET /issuer-registry/subordinate_listing"
+  route_key = "GET /subordinate_listing"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-issuer-registry" {
   api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
-  route_key = "GET /issuer-registry/.well-known/openid-federation"
+  route_key = "GET /.well-known/openid-federation"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
   api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
-  route_key = "GET /issuer-registry/fetch"
+  route_key = "GET /fetch"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 

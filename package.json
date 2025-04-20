@@ -2,7 +2,7 @@
   "name": "dcc-members-oidf",
   "version": "1.0.0",
   "description": "## Description:",
-  "main": "index.js",
+  "main": "./lambda_function/lambda_counter2.mjs",
   "scripts": {
     "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\" || echo 'OpenSSL not found, install it manually'",
     "builddb": "npx rimraf issuerreg.db && sqlite3 issuerreg.db < schema.sql",
@@ -10,7 +10,7 @@
     "remotebuild": "terraform apply",
     "remotetestdata": "python ./convert.py && aws dynamodb batch-write-item --request-items file://testdata.json",
     "remotedestroy": "terraform destroy",
-    "webservice": "node index.js"
+    "webservice": "node ./lambda_function/lambda_counter2.mjs"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "aws-sdk": "^2.1692.0",
     "express": "^4.21.2",
     "jose": "^5.9.6",
+    "newman": "^6.2.1",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
