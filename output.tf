@@ -14,20 +14,11 @@ output "environment_table_arn" {
   value       = aws_dynamodb_table.dynamo-issuers.arn
 }
 
-output "api_gateway_invoke_url" {
-  description = "Invoke URL for the API Gateway"
-  value       = aws_apigatewayv2_stage.dev.invoke_url
+output "cloudfront_gateway_cname" {
+  value = aws_cloudfront_distribution.api_distribution.domain_name
+  description = "The CloudFront distribution domain name"
 }
 
-output "api_gateway_endpoint" {
-  description = "The API Gateway endpoint URL"
-  value       = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].target_domain_name
-}
-
-output "api_gateway_stage_url" {
-  description = "The full URL for the API Gateway stage"
-  value       = "https://${aws_apigatewayv2_domain_name.custom_domain.domain_name}/"
-}
 
 output "certificate_validation_cname" {
   description = "[Add to your DNS records first] Certificate validation CNAME record for registry.dcconsortium.org"
@@ -46,14 +37,5 @@ output "subdomain_validation_cname" {
     Type = "CNAME"
     "CNAME name" = [for option in toset(aws_acm_certificate.registry_cert.domain_validation_options) : option.resource_record_name if option.domain_name != aws_acm_certificate.registry_cert.domain_name][0]
     "CNAME value" = [for option in toset(aws_acm_certificate.registry_cert.domain_validation_options) : option.resource_record_value if option.domain_name != aws_acm_certificate.registry_cert.domain_name][0]
-  }
-}
-
-output "api_gateway_cname" {
-  description = "[Add to your DNS records second] API Gateway CNAME record"
-  value = {
-    Host = aws_apigatewayv2_domain_name.custom_domain.domain_name
-    Type = "CNAME"
-    Value = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].target_domain_name
   }
 }

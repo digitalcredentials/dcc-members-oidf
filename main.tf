@@ -143,10 +143,86 @@ resource "aws_apigatewayv2_api" "api-issuer_registry" {
   protocol_type = "HTTP"
 }
 
+resource "aws_cloudwatch_log_group" "api_gateway" {
+  name              = "/aws/apigateway/${aws_apigatewayv2_api.api-issuer_registry.name}"
+  retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda-issuerregistry.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api-issuer_registry.execution_arn}/*/*/*"
+}
+
+# Create IAM role for API Gateway
+resource "aws_iam_role" "api_gateway" {
+  name = "api_gateway_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Add IAM policy for API Gateway to write logs
+resource "aws_iam_role_policy" "api_gateway_logs" {
+  name = "api_gateway_logs"
+  role = aws_iam_role.api_gateway.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents",
+          "logs:GetLogEvents",
+          "logs:FilterLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_apigatewayv2_stage" "dev" {
   api_id      = aws_apigatewayv2_api.api-issuer_registry.id
   name        = "dev"
   auto_deploy = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
+    format = jsonencode({
+      requestId      = "$context.requestId"
+      ip            = "$context.identity.sourceIp"
+      requestTime    = "$context.requestTime"
+      httpMethod    = "$context.httpMethod"
+      routeKey      = "$context.routeKey"
+      status        = "$context.status"
+      protocol      = "$context.protocol"
+      responseLength = "$context.responseLength"
+      integrationError = "$context.integration.error"
+    })
+  }
+
+  default_route_settings {
+    logging_level = "INFO"
+    data_trace_enabled = true
+  }
 }
 
 resource "aws_apigatewayv2_integration" "api-lambda" {
@@ -175,14 +251,6 @@ resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
-resource "aws_lambda_permission" "apigw" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda-issuerregistry.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api-issuer_registry.execution_arn}/*/*/*"
-}
-
 ###################### ACM CERTIFICATE ######################
 
 resource "aws_acm_certificate" "registry_cert" {
@@ -191,38 +259,58 @@ resource "aws_acm_certificate" "registry_cert" {
   validation_method = "DNS"
 }
 
-###################### API GATEWAY CUSTOM DOMAIN ######################
 
-resource "aws_apigatewayv2_domain_name" "custom_domain" {
-  domain_name = "test.registry.dcconsortium.org"
+###################### CLOUDFRONT DISTRIBUTION ######################
 
-  domain_name_configuration {
-    certificate_arn = aws_acm_certificate.registry_cert.arn
-    endpoint_type   = "REGIONAL"
-    security_policy = "TLS_1_2"
+resource "aws_cloudfront_distribution" "api_distribution" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "CloudFront distribution for API Gateway"
+  default_root_object = ""
+  price_class         = "PriceClass_100"  # US, Canada, Europe
+
+  origin {
+    domain_name = "${aws_apigatewayv2_api.api-issuer_registry.id}.execute-api.us-east-1.amazonaws.com"
+    origin_id   = "api-gateway"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
   }
-}
 
-resource "aws_apigatewayv2_api_mapping" "api_mapping" {
-  api_id      = aws_apigatewayv2_api.api-issuer_registry.id
-  domain_name = aws_apigatewayv2_domain_name.custom_domain.id
-  stage       = aws_apigatewayv2_stage.dev.id
-}
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "api-gateway"
 
-###################### ROUTE53 DNS RECORDS ######################
+    forwarded_values {
+      query_string = true
+      headers      = ["Origin"]
 
-data "aws_route53_zone" "dcc_zone" {
-  name = "dcconsortium.org"
-}
+      cookies {
+        forward = "none"
+      }
+    }
 
-resource "aws_route53_record" "api_gateway_record" {
-  zone_id = data.aws_route53_zone.dcc_zone.zone_id
-  name    = "test.registry.dcconsortium.org"
-  type    = "A"
-
-  alias {
-    name                   = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].target_domain_name
-    zone_id                = aws_apigatewayv2_domain_name.custom_domain.domain_name_configuration[0].hosted_zone_id
-    evaluate_target_health = true
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
   }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn = aws_acm_certificate.registry_cert.arn
+    ssl_support_method  = "sni-only"
+  }
+
+  aliases = ["test.registry.dcconsortium.org"]
 }
