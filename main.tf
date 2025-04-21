@@ -45,12 +45,12 @@ resource "random_string" "suffix" {
 data "archive_file" "zip-nodejs" {
   type        = "zip"
   source_dir = "lambda_function"
-  output_path = "lambda_counter2.zip"
+  output_path = "issuer_registry.zip"
 }
 
 resource "aws_s3_object" "lambda-in-s3" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
-  key    = "lambda_counter2.zip"
+  key    = "issuer_registry.zip"
   source = data.archive_file.zip-nodejs.output_path
   etag   = filemd5(data.archive_file.zip-nodejs.output_path)
 }
@@ -61,7 +61,7 @@ resource "aws_lambda_function" "lambda-issuerregistry" {
   s3_key        = aws_s3_object.lambda-in-s3.key
 
   runtime = "nodejs22.x"
-  handler = "lambda_counter2.lambdaHandler"
+  handler = "issuer_registry.lambdaHandler"
 
   source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
 
@@ -138,19 +138,19 @@ resource "aws_dynamodb_table" "dynamo-registry_public_keys" {
 
 ####################### HTTP API GATEWAY #####################
 
-resource "aws_apigatewayv2_api" "api-lambda_counter2" {
-  name          = "api-lambda_counter2"
+resource "aws_apigatewayv2_api" "api-issuer_registry" {
+  name          = "api-issuer_registry"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_stage" "dev" {
-  api_id      = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id      = aws_apigatewayv2_api.api-issuer_registry.id
   name        = "dev"
   auto_deploy = true
 }
 
 resource "aws_apigatewayv2_integration" "api-lambda" {
-  api_id                 = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id                 = aws_apigatewayv2_api.api-issuer_registry.id
   integration_uri        = aws_lambda_function.lambda-issuerregistry.invoke_arn
   payload_format_version = "2.0"
   integration_type       = "AWS_PROXY"
@@ -158,19 +158,19 @@ resource "aws_apigatewayv2_integration" "api-lambda" {
 }
 
 resource "aws_apigatewayv2_route" "api-subordinate-listing" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
   route_key = "GET /subordinate_listing"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-issuer-registry" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
   route_key = "GET /.well-known/openid-federation"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
-  api_id    = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
   route_key = "GET /fetch"
   target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
 }
@@ -180,7 +180,7 @@ resource "aws_lambda_permission" "apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda-issuerregistry.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api-lambda_counter2.execution_arn}/*/*/*"
+  source_arn    = "${aws_apigatewayv2_api.api-issuer_registry.execution_arn}/*/*/*"
 }
 
 ###################### ACM CERTIFICATE ######################
@@ -204,7 +204,7 @@ resource "aws_apigatewayv2_domain_name" "custom_domain" {
 }
 
 resource "aws_apigatewayv2_api_mapping" "api_mapping" {
-  api_id      = aws_apigatewayv2_api.api-lambda_counter2.id
+  api_id      = aws_apigatewayv2_api.api-issuer_registry.id
   domain_name = aws_apigatewayv2_domain_name.custom_domain.id
   stage       = aws_apigatewayv2_stage.dev.id
 }

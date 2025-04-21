@@ -5,7 +5,7 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
-const THIS_URL = "https://w3447ka4vf.execute-api.us-east-1.amazonaws.com/dev"; // For determining internal path for fetch statement (before issuers subfolder)
+const THIS_URL = "https://test.registry.dcconsortium.org"; // For determining internal path for fetch statement (before issuers subfolder)
 const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)";
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
@@ -33,8 +33,8 @@ async function generateEntityStatement(sub) {
                     homepage_uri: THIS_ORGANIZATION_HOMEPAGE_URI,
                     logo_uri: THIS_ORGANIZATION_LOGO_URI,
                     policy_uri: THIS_ORGANIZATION_POLICY_URI,
-                    federation_fetch_endpoint: `https://issuerregistry.example.com/fetch`,
-                    federation_list_endpoint: `https://issuerregistry.example.com/subordinate_listing`
+                    federation_fetch_endpoint: `${THIS_URL}/fetch`,
+                    federation_list_endpoint: `${THIS_URL}/subordinate_listing`
                 } : {
                     organization_name: '',
                     homepage_uri: '',

@@ -1,7 +1,7 @@
 {
   "name": "lambda_function",
   "version": "1.0.0",
-  "main": "lambda_counter2.mjs",
+  "main": "issuer_registry.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
