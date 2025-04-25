@@ -201,7 +201,7 @@ resource "aws_iam_role_policy" "api_gateway_logs" {
 
 resource "aws_apigatewayv2_stage" "dev" {
   api_id      = aws_apigatewayv2_api.api-issuer_registry.id
-  name        = "dev"
+  name        = "$default"
   auto_deploy = true
 
   access_log_settings {
@@ -217,11 +217,6 @@ resource "aws_apigatewayv2_stage" "dev" {
       responseLength = "$context.responseLength"
       integrationError = "$context.integration.error"
     })
-  }
-
-  default_route_settings {
-    logging_level = "INFO"
-    data_trace_enabled = true
   }
 }
 
@@ -257,8 +252,17 @@ resource "aws_acm_certificate" "registry_cert" {
   domain_name       = "registry.dcconsortium.org"
   subject_alternative_names = ["test.registry.dcconsortium.org"]
   validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
+# Will not fully finish deploying until the CNAME records are put in at the subdomain
+resource "aws_acm_certificate_validation" "registry_cert_validation" {
+  certificate_arn         = aws_acm_certificate.registry_cert.arn
+  validation_record_fqdns = [for record in aws_acm_certificate.registry_cert.domain_validation_options : record.resource_record_name]
+}
 
 ###################### CLOUDFRONT DISTRIBUTION ######################
 
@@ -268,6 +272,8 @@ resource "aws_cloudfront_distribution" "api_distribution" {
   comment             = "CloudFront distribution for API Gateway"
   default_root_object = ""
   price_class         = "PriceClass_100"  # US, Canada, Europe
+
+  aliases = ["test.registry.dcconsortium.org"]  # Add your custom domain here
 
   origin {
     domain_name = "${aws_apigatewayv2_api.api-issuer_registry.id}.execute-api.us-east-1.amazonaws.com"
@@ -308,9 +314,8 @@ resource "aws_cloudfront_distribution" "api_distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = aws_acm_certificate.registry_cert.arn
+    acm_certificate_arn = aws_acm_certificate_validation.registry_cert_validation.certificate_arn
     ssl_support_method  = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
-
-  aliases = ["test.registry.dcconsortium.org"]
 }

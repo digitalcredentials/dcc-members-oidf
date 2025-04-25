@@ -41,15 +41,6 @@
                     },
                     "homepage_uri": {
                         "S": "https://twotraining.com"
-                    },
-                    "legal_name": {
-                        "S": "NULL"
-                    },
-                    "ctid": {
-                        "S": "NULL"
-                    },
-                    "rorid": {
-                        "S": "NULL"
                     }
                 }
             }
@@ -68,15 +59,6 @@
                     },
                     "homepage_uri": {
                         "S": "https://threetech.com"
-                    },
-                    "legal_name": {
-                        "S": "NULL"
-                    },
-                    "ctid": {
-                        "S": "NULL"
-                    },
-                    "rorid": {
-                        "S": "NULL"
                     }
                 }
             }

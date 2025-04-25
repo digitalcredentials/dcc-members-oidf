@@ -32,6 +32,9 @@ def parse_sql_to_json(sql_content):
             # Create the item dictionary with type indicators
             item = {}
             for col, val in zip(columns, parsed_values):
+                print(val);
+                if val.upper() == "NULL":  # Skip NULL values
+                    continue
                 if val.isdigit():  # If it's a number
                     item[col] = {"N": val}
                 else:  # If it's a string

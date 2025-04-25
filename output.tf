@@ -19,7 +19,6 @@ output "cloudfront_gateway_cname" {
   description = "The CloudFront distribution domain name"
 }
 
-
 output "certificate_validation_cname" {
   description = "[Add to your DNS records first] Certificate validation CNAME record for registry.dcconsortium.org"
   value = {

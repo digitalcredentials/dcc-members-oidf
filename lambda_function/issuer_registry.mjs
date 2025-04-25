@@ -1,6 +1,8 @@
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const USE_DYNAMODB = process.env.USE_DYNAMODB === "true";
+console.log(`USE_DYNAMODB value (store): ${USE_DYNAMODB}`);
+
 const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
@@ -60,6 +62,7 @@ async function generateEntityStatement(sub) {
 
     if (isTrustAnchor) {
         if (USE_DYNAMODB) {
+            console.log("in dynamodb");
             const keyParams = { TableName: "db-registry_public_keys" };
             const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
             entityStatement.jwks.keys = keyResult.Items.map(item => ({
@@ -70,6 +73,7 @@ async function generateEntityStatement(sub) {
                 y: JSON.parse(item.pub_key.S).y
             }));
         } else {
+            console.log("in sqlite");
             const keys = await new Promise((resolve, reject) => {
                 db.all(queryTrustAnchorKeys, [], (err, rows) => {
                     if (err) reject(err);
@@ -90,6 +94,7 @@ async function generateEntityStatement(sub) {
         return entityStatement;
     } else {
         if (USE_DYNAMODB) {
+            console.log("in dynamodb");
             const params = {
                 TableName: "db-issuers",
                 FilterExpression: "sub_name = :sub",
@@ -126,6 +131,7 @@ async function generateEntityStatement(sub) {
                 };
             }
         } else {
+            console.log("in sqlite");
             const issuer = await new Promise((resolve, reject) => {
                 console.log(sub);
                 db.get(`SELECT organization_name, homepage_uri, logo_uri, legal_name, ctid, rorid FROM issuers WHERE sub_name = ?`, [sub], (err, row) => {
@@ -187,6 +193,7 @@ async function signEntityStatement(entityStatement) {
         publicKeyData = extractSValues(publicKeyData);
         pub = JSON.parse(publicKeyData.pub_key);
     } else {
+        console.log("in sqlite");
         publicKeyData = await new Promise((resolve, reject) => {
             db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry_public_keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
                 if (err) reject(err);
@@ -262,6 +269,7 @@ export async function lambdaHandler(event) {
     if (routeKey == `GET /subordinate_listing`) {
         try {
             if (USE_DYNAMODB) {
+                console.log("in dynamodb");
                 const command = new ScanCommand({
                     TableName: "db-issuers",
                     ProjectionExpression: "sub_name"
@@ -270,6 +278,7 @@ export async function lambdaHandler(event) {
                 const subNames = Items.map((item) => item.sub_name.S);
                 return { statusCode: 200, body: JSON.stringify(subNames) };
             } else {
+                console.log("in sqlite");
                 return new Promise((resolve) => {
                     db.all("SELECT sub_name FROM issuers", [], (err, rows) => {
                         if (err) {
@@ -328,7 +337,7 @@ export async function lambdaHandler(event) {
 
 // **Local Express Server (For Testing Only)**
 if (!USE_DYNAMODB) {
-
+    console.log("in local express server");
     const app = express();
     const port = process.env.PORT || 3000;
 
