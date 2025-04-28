@@ -41,6 +41,9 @@
                     },
                     "homepage_uri": {
                         "S": "https://twotraining.com"
+                    },
+                    "legal_name": {
+                        "S": "TwoTraining Nursing School"
                     }
                 }
             }
@@ -59,6 +62,9 @@
                     },
                     "homepage_uri": {
                         "S": "https://threetech.com"
+                    },
+                    "legal_name": {
+                        "S": "ThreeTech College"
                     }
                 }
             }

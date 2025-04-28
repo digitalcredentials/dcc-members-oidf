@@ -5,7 +5,7 @@ CREATE TABLE issuers (
     organization_name TEXT NOT NULL,
     logo_uri TEXT NOT NULL,
     homepage_uri TEXT NOT NULL,
-    legal_name TEXT,
+    legal_name TEXT NOT NULL,
     ctid TEXT,
     rorid TEXT
 );
