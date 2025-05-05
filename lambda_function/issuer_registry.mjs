@@ -120,14 +120,14 @@ async function generateEntityStatement(sub) {
             if (item.ctid) {
                 entityStatement.metadata.credential_registry_entity = {
                     ctid: item.ctid.S,
-                    ce_url: `https://credentialengineregistry.org/resources/${item.ctid.S}`
+                    url: `https://credentialengineregistry.org/resources/${item.ctid.S}`
                 };
             }
 
             if (item.rorid) {
                 entityStatement.metadata.ror_entity = {
                     rorid: item.rorid.S,
-                    ror_url: `https://ror.org/${item.rorid.S}`
+                    url: `https://ror.org/${item.rorid.S}`
                 };
             }
         } else {
@@ -156,14 +156,14 @@ async function generateEntityStatement(sub) {
             if (issuer.ctid) {
                 entityStatement.metadata.credential_registry_entity = {
                     ctid: issuer.ctid,
-                    ce_url: `https://credentialengineregistry.org/resources/${issuer.ctid}`
+                    url: `https://credentialengineregistry.org/resources/${issuer.ctid}`
                 };
             }
 
             if (issuer.rorid) {
                 entityStatement.metadata.ror_entity = {
                     rorid: issuer.rorid,
-                    ror_url: `https://ror.org/${issuer.rorid}`
+                    url: `https://ror.org/${issuer.rorid}`
                 };
             }
         }

@@ -727,7 +727,7 @@
 		},
 		{
 			"key": "METADATA_ROR_CTID_MANDATORY_KEYS",
-			"value": "{ \"credential_registry_entity\" : [\"ctid\", \"ce_url\"] ,  \"ror_entity\" : [\"rorid\", \"ror_url\"] }",
+			"value": "{ \"credential_registry_entity\" : [\"ctid\", \"url\"] ,  \"ror_entity\" : [\"rorid\", \"url\"] }",
 			"type": "string"
 		},
 		{
