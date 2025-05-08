@@ -1,7 +1,7 @@
 output "function_name" {
   description = "Name of the Lambda function."
 
-  value = aws_lambda_function.lambda-issuerregistry.function_name
+  value = aws_lambda_function.dcc-oidf-t-lambda-issuerregistry.function_name
 }
 
 output "environment_table_name" {
@@ -15,7 +15,7 @@ output "environment_table_arn" {
 }
 
 output "cloudfront_gateway_cname" {
-  value = aws_cloudfront_distribution.api_distribution.domain_name
+  value = aws_cloudfront_distribution.dcc-oidf-t-api-distribution.domain_name
   description = "The CloudFront distribution domain name"
 }
 

@@ -7,6 +7,82 @@ terraform {
   }
 }
 
+# Resource renaming blocks
+moved {
+  from = aws_lambda_function.lambda-issuerregistry
+  to   = aws_lambda_function.dcc-oidf-t-lambda-issuerregistry
+}
+
+moved {
+  from = aws_apigatewayv2_api.api-issuer_registry
+  to   = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry
+}
+
+moved {
+  from = aws_apigatewayv2_integration.api-lambda
+  to   = aws_apigatewayv2_integration.dcc-oidf-t-api-lambda
+}
+
+moved {
+  from = aws_apigatewayv2_route.api-issuer-registry
+  to   = aws_apigatewayv2_route.dcc-oidf-t-api-issuer-registry
+}
+
+moved {
+  from = aws_apigatewayv2_route.api-issuer-registry-fetch
+  to   = aws_apigatewayv2_route.dcc-oidf-t-api-issuer-registry-fetch
+}
+
+moved {
+  from = aws_apigatewayv2_route.api-subordinate-listing
+  to   = aws_apigatewayv2_route.dcc-oidf-t-api-subordinate-listing
+}
+
+moved {
+  from = aws_apigatewayv2_stage.dev
+  to   = aws_apigatewayv2_stage.dcc-oidf-t-dev
+}
+
+moved {
+  from = aws_cloudfront_distribution.api_distribution
+  to   = aws_cloudfront_distribution.dcc-oidf-t-api-distribution
+}
+
+moved {
+  from = aws_cloudwatch_log_group.api_gateway
+  to   = aws_cloudwatch_log_group.dcc-oidf-t-api-gateway
+}
+
+moved {
+  from = aws_cloudwatch_log_group.lambda-issuerregistry
+  to   = aws_cloudwatch_log_group.dcc-oidf-t-lambda-issuerregistry
+}
+
+moved {
+  from = aws_iam_role.api_gateway
+  to   = aws_iam_role.dcc-oidf-t-api-gateway
+}
+
+moved {
+  from = aws_iam_role.lambda_exec
+  to   = aws_iam_role.dcc-oidf-t-lambda-exec
+}
+
+moved {
+  from = aws_iam_role_policy.api_gateway_logs
+  to   = aws_iam_role_policy.dcc-oidf-t-api-gateway-logs
+}
+
+moved {
+  from = aws_s3_bucket.lambda_bucket
+  to   = aws_s3_bucket.dcc-oidf-t-lambda-bucket
+}
+
+moved {
+  from = aws_s3_object.lambda-in-s3
+  to   = aws_s3_object.dcc-oidf-t-lambda-in-s3
+}
+
 provider "aws" {
   region = "us-east-1" # AWS region where resources will be deployed
 }
@@ -29,9 +105,9 @@ resource "aws_secretsmanager_secret_version" "test_secret_value" {
 
 ###################### CREATE S3 BUCKET ######################
 
-resource "aws_s3_bucket" "lambda_bucket" {
-  bucket = "test-bucket-${random_string.suffix.result}" # Ensure unique bucket name
-  force_destroy = true # Allows automatic deletion of the bucket on destroy
+resource "aws_s3_bucket" "dcc-oidf-t-lambda-bucket" {
+  bucket = "dcc-oidf-t-lambda-${random_string.suffix.result}"
+  force_destroy = true
 }
 
 resource "random_string" "suffix" {
@@ -48,24 +124,24 @@ data "archive_file" "zip-nodejs" {
   output_path = "issuer_registry.zip"
 }
 
-resource "aws_s3_object" "lambda-in-s3" {
-  bucket = aws_s3_bucket.lambda_bucket.bucket
+resource "aws_s3_object" "dcc-oidf-t-lambda-in-s3" {
+  bucket = aws_s3_bucket.dcc-oidf-t-lambda-bucket.bucket
   key    = "issuer_registry.zip"
   source = data.archive_file.zip-nodejs.output_path
   etag   = filemd5(data.archive_file.zip-nodejs.output_path)
 }
 
-resource "aws_lambda_function" "lambda-issuerregistry" {
-  function_name = "issuer-registry"
-  s3_bucket     = aws_s3_bucket.lambda_bucket.bucket
-  s3_key        = aws_s3_object.lambda-in-s3.key
+resource "aws_lambda_function" "dcc-oidf-t-lambda-issuerregistry" {
+  function_name = "dcc-oidf-t-issuer-registry"
+  s3_bucket     = aws_s3_bucket.dcc-oidf-t-lambda-bucket.bucket
+  s3_key        = aws_s3_object.dcc-oidf-t-lambda-in-s3.key
 
   runtime = "nodejs22.x"
   handler = "issuer_registry.lambdaHandler"
 
   source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
 
-  role = aws_iam_role.lambda_exec.arn
+  role = aws_iam_role.dcc-oidf-t-lambda-exec.arn
 
   environment {
     variables = {
@@ -75,13 +151,13 @@ resource "aws_lambda_function" "lambda-issuerregistry" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "lambda-issuerregistry" {
-  name              = "/aws/lambda/${aws_lambda_function.lambda-issuerregistry.function_name}"
+resource "aws_cloudwatch_log_group" "dcc-oidf-t-lambda-issuerregistry" {
+  name              = "/aws/lambda/${aws_lambda_function.dcc-oidf-t-lambda-issuerregistry.function_name}"
   retention_in_days = 30
 }
 
-resource "aws_iam_role" "lambda_exec" {
-  name = "serverless_lambda"
+resource "aws_iam_role" "dcc-oidf-t-lambda-exec" {
+  name = "dcc-oidf-t-serverless-lambda"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -97,17 +173,17 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  role       = aws_iam_role.lambda_exec.name
+  role       = aws_iam_role.dcc-oidf-t-lambda-exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_dynamoroles" {
-  role       = aws_iam_role.lambda_exec.name
+  role       = aws_iam_role.dcc-oidf-t-lambda-exec.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_secretsmanager" {
-  role       = aws_iam_role.lambda_exec.name
+  role       = aws_iam_role.dcc-oidf-t-lambda-exec.name
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 }
 
@@ -139,27 +215,27 @@ resource "aws_dynamodb_table" "dynamo-registry-public-keys" {
 
 ####################### HTTP API GATEWAY #####################
 
-resource "aws_apigatewayv2_api" "api-issuer_registry" {
-  name          = "api-issuer_registry"
+resource "aws_apigatewayv2_api" "dcc-oidf-t-api-issuer-registry" {
+  name          = "dcc-oidf-t-api-issuer-registry"
   protocol_type = "HTTP"
 }
 
-resource "aws_cloudwatch_log_group" "api_gateway" {
-  name              = "/aws/apigateway/${aws_apigatewayv2_api.api-issuer_registry.name}"
+resource "aws_cloudwatch_log_group" "dcc-oidf-t-api-gateway" {
+  name              = "/aws/apigateway/${aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.name}"
   retention_in_days = 30
 }
 
-resource "aws_lambda_permission" "apigw" {
+resource "aws_lambda_permission" "dcc-oidf-t-apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda-issuerregistry.function_name
+  function_name = aws_lambda_function.dcc-oidf-t-lambda-issuerregistry.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.api-issuer_registry.execution_arn}/*/*/*"
+  source_arn    = "${aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.execution_arn}/*/*/*"
 }
 
 # Create IAM role for API Gateway
-resource "aws_iam_role" "api_gateway" {
-  name = "api_gateway_role"
+resource "aws_iam_role" "dcc-oidf-t-api-gateway" {
+  name = "dcc-oidf-t-api-gateway-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -176,9 +252,9 @@ resource "aws_iam_role" "api_gateway" {
 }
 
 # Add IAM policy for API Gateway to write logs
-resource "aws_iam_role_policy" "api_gateway_logs" {
-  name = "api_gateway_logs"
-  role = aws_iam_role.api_gateway.id
+resource "aws_iam_role_policy" "dcc-oidf-t-api-gateway-logs" {
+  name = "dcc-oidf-t-api-gateway-logs"
+  role = aws_iam_role.dcc-oidf-t-api-gateway.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -200,13 +276,13 @@ resource "aws_iam_role_policy" "api_gateway_logs" {
   })
 }
 
-resource "aws_apigatewayv2_stage" "dev" {
-  api_id      = aws_apigatewayv2_api.api-issuer_registry.id
+resource "aws_apigatewayv2_stage" "dcc-oidf-t-dev" {
+  api_id      = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
   name        = "$default"
   auto_deploy = true
 
   access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
+    destination_arn = aws_cloudwatch_log_group.dcc-oidf-t-api-gateway.arn
     format = jsonencode({
       requestId      = "$context.requestId"
       ip            = "$context.identity.sourceIp"
@@ -221,30 +297,30 @@ resource "aws_apigatewayv2_stage" "dev" {
   }
 }
 
-resource "aws_apigatewayv2_integration" "api-lambda" {
-  api_id                 = aws_apigatewayv2_api.api-issuer_registry.id
-  integration_uri        = aws_lambda_function.lambda-issuerregistry.invoke_arn
+resource "aws_apigatewayv2_integration" "dcc-oidf-t-api-lambda" {
+  api_id                 = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
+  integration_uri        = aws_lambda_function.dcc-oidf-t-lambda-issuerregistry.invoke_arn
   payload_format_version = "2.0"
   integration_type       = "AWS_PROXY"
   integration_method     = "POST"
 }
 
-resource "aws_apigatewayv2_route" "api-subordinate-listing" {
-  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
+resource "aws_apigatewayv2_route" "dcc-oidf-t-api-subordinate-listing" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
   route_key = "GET /subordinate_listing"
-  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-t-api-lambda.id}"
 }
 
-resource "aws_apigatewayv2_route" "api-issuer-registry" {
-  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
+resource "aws_apigatewayv2_route" "dcc-oidf-t-api-issuer-registry" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
   route_key = "GET /.well-known/openid-federation"
-  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-t-api-lambda.id}"
 }
 
-resource "aws_apigatewayv2_route" "api-issuer-registry-fetch" {
-  api_id    = aws_apigatewayv2_api.api-issuer_registry.id
+resource "aws_apigatewayv2_route" "dcc-oidf-t-api-issuer-registry-fetch" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
   route_key = "GET /fetch"
-  target    = "integrations/${aws_apigatewayv2_integration.api-lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-t-api-lambda.id}"
 }
 
 ###################### ACM CERTIFICATE ######################
@@ -267,17 +343,17 @@ resource "aws_acm_certificate_validation" "registry_cert_validation" {
 
 ###################### CLOUDFRONT DISTRIBUTION ######################
 
-resource "aws_cloudfront_distribution" "api_distribution" {
+resource "aws_cloudfront_distribution" "dcc-oidf-t-api-distribution" {
   enabled             = true
   is_ipv6_enabled     = true
-  comment             = "CloudFront distribution for API Gateway"
+  comment             = "dcc-oidf-t-cloudfront-distribution"
   default_root_object = ""
   price_class         = "PriceClass_100"  # US, Canada, Europe
 
   aliases = ["test.registry.dcconsortium.org"]  # Add your custom domain here
 
   origin {
-    domain_name = "${aws_apigatewayv2_api.api-issuer_registry.id}.execute-api.us-east-1.amazonaws.com"
+    domain_name = "${aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id}.execute-api.us-east-1.amazonaws.com"
     origin_id   = "api-gateway"
 
     custom_origin_config {
