@@ -60,6 +60,10 @@ Using `terraform output`, add to your DNS records:
 - Next: api_gateway_cname
 
 
+General note about deployment:
+- For the first deployment of the cloudwatch distributions, the deployment might fail on the first time, then it might actually be deployed and the import will need to happen manually (`terraform import`)
+
+
 ## System diagram generation
 
 Can use eraser.io but it's recommended to double-check the outputs.

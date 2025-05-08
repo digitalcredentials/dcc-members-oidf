@@ -14,9 +14,14 @@ output "environment_table_arn" {
   value       = aws_dynamodb_table.dynamo-issuers.arn
 }
 
-output "cloudfront_gateway_cname" {
+output "cloudfront_gateway_cname_test" {
   value = aws_cloudfront_distribution.dcc-oidf-t-api-distribution.domain_name
   description = "The CloudFront distribution domain name"
+}
+
+output "cloudfront_gateway_cname_prod" {
+  value = aws_cloudfront_distribution.dcc-oidf-p-api-distribution.domain_name
+  description = "The production CloudFront distribution domain name"
 }
 
 output "certificate_validation_cname" {

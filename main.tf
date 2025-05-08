@@ -200,7 +200,7 @@ resource "aws_iam_role_policy" "dcc-oidf-t-api-gateway-logs" {
   })
 }
 
-resource "aws_apigatewayv2_stage" "dcc-oidf-t-dev" {
+resource "aws_apigatewayv2_stage" "dcc-oidf-t-api-gateway-stage" {
   api_id      = aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id
   name        = "$default"
   auto_deploy = true
@@ -278,6 +278,260 @@ resource "aws_cloudfront_distribution" "dcc-oidf-t-api-distribution" {
 
   origin {
     domain_name = "${aws_apigatewayv2_api.dcc-oidf-t-api-issuer-registry.id}.execute-api.us-east-1.amazonaws.com"
+    origin_id   = "api-gateway"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "api-gateway"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Origin"]
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn = aws_acm_certificate_validation.registry_cert_validation.certificate_arn
+    ssl_support_method  = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+}
+
+######################### PRODUCTION RESOURCES ######################
+
+resource "aws_s3_bucket" "dcc-oidf-p-lambda-bucket" {
+  bucket = "dcc-oidf-p-lambda-${random_string.suffix.result}"
+  force_destroy = true
+}
+
+resource "aws_s3_object" "dcc-oidf-p-lambda-in-s3" {
+  bucket = aws_s3_bucket.dcc-oidf-p-lambda-bucket.bucket
+  key    = "issuer_registry.zip"
+  source = data.archive_file.zip-nodejs.output_path
+  etag   = filemd5(data.archive_file.zip-nodejs.output_path)
+}
+
+resource "aws_lambda_function" "dcc-oidf-p-lambda-issuerregistry" {
+  function_name = "dcc-oidf-p-issuer-registry"
+  s3_bucket     = aws_s3_bucket.dcc-oidf-p-lambda-bucket.bucket
+  s3_key        = aws_s3_object.dcc-oidf-p-lambda-in-s3.key
+
+  runtime = "nodejs22.x"
+  handler = "issuer_registry.lambdaHandler"
+
+  source_code_hash = data.archive_file.zip-nodejs.output_base64sha256
+
+  role = aws_iam_role.dcc-oidf-p-lambda-exec.arn
+
+  environment {
+    variables = {
+      USE_DYNAMODB = "true"
+      IS_TEST_OR_PROD = "p"
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_group" "dcc-oidf-p-lambda-issuerregistry" {
+  name              = "/aws/lambda/${aws_lambda_function.dcc-oidf-p-lambda-issuerregistry.function_name}"
+  retention_in_days = 30
+}
+
+resource "aws_iam_role" "dcc-oidf-p-lambda-exec" {
+  name = "dcc-oidf-p-serverless-lambda"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid    = ""
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "dcc-oidf-p-lambda_policy" {
+  role       = aws_iam_role.dcc-oidf-p-lambda-exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "dcc-oidf-p-lambda_dynamoroles" {
+  role       = aws_iam_role.dcc-oidf-p-lambda-exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "dcc-oidf-p-lambda_secretsmanager" {
+  role       = aws_iam_role.dcc-oidf-p-lambda-exec.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
+resource "aws_dynamodb_table" "dcc-oidf-p-dynamo-issuers" {
+  name         = "dcc-oidf-p-db-issuers"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "sub_name"
+
+  attribute {
+    name = "sub_name"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "dcc-oidf-p-dynamo-registry-public-keys" {
+  name         = "dcc-oidf-p-db-registry-public-keys"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "key_id"
+
+  attribute {
+    name = "key_id"
+    type = "S"
+  }
+}
+
+resource "aws_apigatewayv2_api" "dcc-oidf-p-api-issuer-registry" {
+  name          = "dcc-oidf-p-api-issuer-registry"
+  protocol_type = "HTTP"
+}
+
+resource "aws_cloudwatch_log_group" "dcc-oidf-p-api-gateway" {
+  name              = "/aws/apigateway/${aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.name}"
+  retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "dcc-oidf-p-apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.dcc-oidf-p-lambda-issuerregistry.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.execution_arn}/*/*/*"
+}
+
+resource "aws_iam_role" "dcc-oidf-p-api-gateway" {
+  name = "dcc-oidf-p-api-gateway-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "dcc-oidf-p-api-gateway-logs" {
+  name = "dcc-oidf-p-api-gateway-logs"
+  role = aws_iam_role.dcc-oidf-p-api-gateway.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents",
+          "logs:GetLogEvents",
+          "logs:FilterLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_apigatewayv2_stage" "dcc-oidf-p-api-gateway-stage" {
+  api_id      = aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id
+  name        = "$default"
+  auto_deploy = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.dcc-oidf-p-api-gateway.arn
+    format = jsonencode({
+      requestId      = "$context.requestId"
+      ip            = "$context.identity.sourceIp"
+      requestTime    = "$context.requestTime"
+      httpMethod    = "$context.httpMethod"
+      routeKey      = "$context.routeKey"
+      status        = "$context.status"
+      protocol      = "$context.protocol"
+      responseLength = "$context.responseLength"
+      integrationError = "$context.integration.error"
+    })
+  }
+}
+
+resource "aws_apigatewayv2_integration" "dcc-oidf-p-api-lambda" {
+  api_id                 = aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id
+  integration_uri        = aws_lambda_function.dcc-oidf-p-lambda-issuerregistry.invoke_arn
+  payload_format_version = "2.0"
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+}
+
+resource "aws_apigatewayv2_route" "dcc-oidf-p-api-subordinate-listing" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id
+  route_key = "GET /subordinate_listing"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-p-api-lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "dcc-oidf-p-api-issuer-registry" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id
+  route_key = "GET /.well-known/openid-federation"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-p-api-lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "dcc-oidf-p-api-issuer-registry-fetch" {
+  api_id    = aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id
+  route_key = "GET /fetch"
+  target    = "integrations/${aws_apigatewayv2_integration.dcc-oidf-p-api-lambda.id}"
+}
+
+resource "aws_cloudfront_distribution" "dcc-oidf-p-api-distribution" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "dcc-oidf-p-cloudfront-distribution"
+  default_root_object = ""
+  price_class         = "PriceClass_100"  # US, Canada, Europe
+
+  aliases = ["registry.dcconsortium.org"]  # Production domain
+
+  origin {
+    domain_name = "${aws_apigatewayv2_api.dcc-oidf-p-api-issuer-registry.id}.execute-api.us-east-1.amazonaws.com"
     origin_id   = "api-gateway"
 
     custom_origin_config {
