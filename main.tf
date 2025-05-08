@@ -70,6 +70,7 @@ resource "aws_lambda_function" "lambda-issuerregistry" {
   environment {
     variables = {
       USE_DYNAMODB = "true"
+      IS_TEST_OR_PROD = "t"
     }
   }
 }

@@ -1,7 +1,9 @@
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const USE_DYNAMODB = process.env.USE_DYNAMODB === "true";
+const IS_TEST_OR_PROD = process.env.IS_TEST_OR_PROD || "t"; // Default to test if not set
 console.log(`USE_DYNAMODB value (store): ${USE_DYNAMODB}`);
+console.log(`IS_TEST_OR_PROD value: ${IS_TEST_OR_PROD}`);
 
 const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
@@ -63,7 +65,7 @@ async function generateEntityStatement(sub) {
     if (isTrustAnchor) {
         if (USE_DYNAMODB) {
             console.log("in dynamodb");
-            const keyParams = { TableName: "dcc-oidf-t-db-registry-public-keys" };
+            const keyParams = { TableName: `dcc-oidf-${IS_TEST_OR_PROD}-db-registry-public-keys` };
             const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
             entityStatement.jwks.keys = keyResult.Items.map(item => ({
                 kty: item.jwks_kty.S,
@@ -96,7 +98,7 @@ async function generateEntityStatement(sub) {
         if (USE_DYNAMODB) {
             console.log("in dynamodb");
             const params = {
-                TableName: "dcc-oidf-t-db-issuers",
+                TableName: `dcc-oidf-${IS_TEST_OR_PROD}-db-issuers`,
                 FilterExpression: "sub_name = :sub",
                 ExpressionAttributeValues: {
                     ":sub": { S: sub }
@@ -186,7 +188,7 @@ async function signEntityStatement(entityStatement) {
     let pub;
     if (USE_DYNAMODB) {
         console.log("in dynamodb");
-        const keyParams = { TableName: "dcc-oidf-t-db-registry-public-keys" };
+        const keyParams = { TableName: `dcc-oidf-${IS_TEST_OR_PROD}-db-registry-public-keys` };
         const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
         publicKeyData = keyResult.Items.find(item => item.key_id.S === "issuerregistry-key1");
 
@@ -271,7 +273,7 @@ export async function lambdaHandler(event) {
             if (USE_DYNAMODB) {
                 console.log("in dynamodb");
                 const command = new ScanCommand({
-                    TableName: "dcc-oidf-t-db-issuers",
+                    TableName: `dcc-oidf-${IS_TEST_OR_PROD}-db-issuers`,
                     ProjectionExpression: "sub_name"
                 });
                 const { Items } = await dynamoClient.send(command);
