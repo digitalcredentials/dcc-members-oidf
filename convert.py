@@ -4,14 +4,15 @@ import json
 def parse_sql_to_json(sql_content):
     json_output = {}
 
-    # Regex to match INSERT INTO statements, now correctly handling semicolons inside the values
+    # Regex to match INSERT INTO statements, now handling quoted table names
     insert_pattern = re.compile(
-        r"INSERT INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*(.*?)(?=\);)", 
+        r'INSERT INTO\s+(?:"([^"]+)"|(\w+))\s*\(([^)]+)\)\s*VALUES\s*(.*?)(?=\);)', 
         re.S
     )
 
     for match in insert_pattern.finditer(sql_content):
-        table_name, columns, values_section = match.groups()
+        quoted_table, unquoted_table, columns, values_section = match.groups()
+        table_name = quoted_table if quoted_table else unquoted_table
         columns = [col.strip() for col in columns.split(",")]
         # Check if the last character in values_section is not a closing parenthesis and semicolon, append it if missing
         if not values_section.endswith(")") :
@@ -40,7 +41,7 @@ def parse_sql_to_json(sql_content):
                 else:  # If it's a string
                     item[col] = {"S": val}
 
-            db_key = f"db-{table_name}"
+            db_key = f"dcc-oidf-t-db-{table_name}"
             if db_key not in json_output:
                 json_output[db_key] = []
 

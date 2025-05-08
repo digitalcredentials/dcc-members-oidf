@@ -24,7 +24,7 @@ import fs from 'fs';
 async function generateEntityStatement(sub) {
     console.log("in generateEntityStatement");
     const isTrustAnchor = sub === THIS_URL;
-    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry_public_keys`;
+    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry-public-keys`;
 
     const entityStatement = {
         sub: sub,
@@ -63,7 +63,7 @@ async function generateEntityStatement(sub) {
     if (isTrustAnchor) {
         if (USE_DYNAMODB) {
             console.log("in dynamodb");
-            const keyParams = { TableName: "db-registry_public_keys" };
+            const keyParams = { TableName: "dcc-oidf-t-db-registry-public-keys" };
             const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
             entityStatement.jwks.keys = keyResult.Items.map(item => ({
                 kty: item.jwks_kty.S,
@@ -96,7 +96,7 @@ async function generateEntityStatement(sub) {
         if (USE_DYNAMODB) {
             console.log("in dynamodb");
             const params = {
-                TableName: "db-issuers",
+                TableName: "dcc-oidf-t-db-issuers",
                 FilterExpression: "sub_name = :sub",
                 ExpressionAttributeValues: {
                     ":sub": { S: sub }
@@ -186,7 +186,7 @@ async function signEntityStatement(entityStatement) {
     let pub;
     if (USE_DYNAMODB) {
         console.log("in dynamodb");
-        const keyParams = { TableName: "db-registry_public_keys" };
+        const keyParams = { TableName: "dcc-oidf-t-db-registry-public-keys" };
         const keyResult = await dynamoClient.send(new ScanCommand(keyParams));
         publicKeyData = keyResult.Items.find(item => item.key_id.S === "issuerregistry-key1");
 
@@ -195,7 +195,7 @@ async function signEntityStatement(entityStatement) {
     } else {
         console.log("in sqlite");
         publicKeyData = await new Promise((resolve, reject) => {
-            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry_public_keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
+            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry-public-keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
                 if (err) reject(err);
                 else resolve(row);
             });
@@ -223,7 +223,7 @@ async function signEntityStatement(entityStatement) {
         .sign(signingJWK);
     return jwt;
 }
-const tableName = "db-issuers"; // Replace with actual DynamoDB table name
+const tableName = "dcc-oidf-t-db-issuers"; // Replace with actual DynamoDB table name
 
 function convertToDynamoDB(queryObj) {
     const { columns, table_name, comparison_var, comparison, comparison_val } = queryObj;
@@ -271,7 +271,7 @@ export async function lambdaHandler(event) {
             if (USE_DYNAMODB) {
                 console.log("in dynamodb");
                 const command = new ScanCommand({
-                    TableName: "db-issuers",
+                    TableName: "dcc-oidf-t-db-issuers",
                     ProjectionExpression: "sub_name"
                 });
                 const { Items } = await dynamoClient.send(command);

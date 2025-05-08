@@ -113,7 +113,7 @@ resource "aws_iam_role_policy_attachment" "lambda_secretsmanager" {
 ###################### DYNAMODB #####################
 
 resource "aws_dynamodb_table" "dynamo-issuers" {
-  name         = "db-issuers"
+  name         = "dcc-oidf-t-db-issuers"
   billing_mode = "PAY_PER_REQUEST"
 
   hash_key = "sub_name"
@@ -124,8 +124,8 @@ resource "aws_dynamodb_table" "dynamo-issuers" {
   }
 }
 
-resource "aws_dynamodb_table" "dynamo-registry_public_keys" {
-  name         = "db-registry_public_keys"
+resource "aws_dynamodb_table" "dynamo-registry-public-keys" {
+  name         = "dcc-oidf-t-db-registry-public-keys"
   billing_mode = "PAY_PER_REQUEST"
 
   hash_key = "key_id"

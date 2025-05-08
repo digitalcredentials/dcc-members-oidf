@@ -1,5 +1,5 @@
 {
-    "db-issuers": [
+    "dcc-oidf-t-db-issuers": [
         {
             "PutRequest": {
                 "Item": {
@@ -68,9 +68,51 @@
                     }
                 }
             }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:key:z6MkjoriXdbyWD25YXTed114F8hdJrLXQ567xxPHAUKxpKkS"
+                    },
+                    "organization_name": {
+                        "S": "DCC issuer-registry-client OIDF did:key test"
+                    },
+                    "logo_uri": {
+                        "S": "https://digitalcredentials.mit.edu/images/DCC_navbar-logo.png"
+                    },
+                    "homepage_uri": {
+                        "S": "https://dcconsortium.org"
+                    },
+                    "legal_name": {
+                        "S": "DCC issuer-registry-client OIDF did:key test"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:web:digitalcredentials.github.io:dcc-did-web:issuer-registry-client-test"
+                    },
+                    "organization_name": {
+                        "S": "DCC issuer-registry-client OIDF did:web test"
+                    },
+                    "logo_uri": {
+                        "S": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAB4SURBVEhLY1Da6ENTNGoBQTRqAUE0Yixwkq3X5tNgAANBkRlosvgQERbM0OaAmAwFNLFAkMNdW2KGkwjIE1S3AIFGLSCIRi0giEYtwIHq5Tk0BCEIaDwIwLh89RiKMRBRFkDNxQBUsoAyNGoBQTRqAUE01C3Y6AMAsDxJowXOs6oAAAAASUVORK5CYII="
+                    },
+                    "homepage_uri": {
+                        "S": "https://dcconsortium.org"
+                    },
+                    "legal_name": {
+                        "S": "DCC issuer-registry-client OIDF did:web test"
+                    }
+                }
+            }
         }
     ],
-    "db-registry_public_keys": [
+    "dcc-oidf-t-db-registry-public-keys": [
         {
             "PutRequest": {
                 "Item": {

@@ -31,7 +31,7 @@ test.registry.dcconsortium.org
 
 ## How to push the latest test database data to AWS:
 
-1. Potentially run `aws dynamodb delete-table --table-name db-registry_public_keys; aws dynamodb delete-table --table-name db-issuer_public_keys; aws dynamodb delete-table --table-name db-issuers`, which will wipe the DynamoDB tables
+1. Potentially run `aws dynamodb delete-table --table-name dcc-oidf-t-db-registry-public-keys; aws dynamodb delete-table --table-name db-issuer_public_keys; aws dynamodb delete-table --table-name dcc-oidf-t-db-issuers`, which will wipe the DynamoDB tables
 2. Potentially run `terraform apply` to recreate tables
 3. Run `python ./convert.py`, which will convert `testdata.sql` (suitable for SQLlite) into `testdata.json` (suitable for DynamoDB)
 4. Run `aws dynamodb batch-write-item --request-items file://testdata.json`, which will load that data into AWS
