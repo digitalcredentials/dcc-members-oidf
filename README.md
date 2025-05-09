@@ -23,6 +23,7 @@ test.registry.dcconsortium.org
 3. Generate local server cert (HTTPS): `npm run keygen`
 4. Launch webservice: `npm run webservice`
 5. Test endpoint(s): `curl -X GET http://localhost:3000/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests.
+6. Push prod/test/certs to AWS: `terraform apply "-target=module.certificates"` `terraform apply "-target=module.test"` `terraform apply "-target=module.production"`
 
 ## Ancillary scripts
 
