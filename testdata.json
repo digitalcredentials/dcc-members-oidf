@@ -1,0 +1,138 @@
+{
+    "dcc-oidf-t-db-issuers": [
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:web:oneuni.testuni.edu"
+                    },
+                    "organization_name": {
+                        "S": "OneUni University"
+                    },
+                    "logo_uri": {
+                        "S": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAB4SURBVEhLY1Da6ENTNGoBQTRqAUE0Yixwkq3X5tNgAANBkRlosvgQERbM0OaAmAwFNLFAkMNdW2KGkwjIE1S3AIFGLSCIRi0giEYtwIHq5Tk0BCEIaDwIwLh89RiKMRBRFkDNxQBUsoAyNGoBQTRqAUE01C3Y6AMAsDxJowXOs6oAAAAASUVORK5CYII="
+                    },
+                    "homepage_uri": {
+                        "S": "https://oneuni.edu"
+                    },
+                    "legal_name": {
+                        "S": "Board and Trustees of OneUni University"
+                    },
+                    "ctid": {
+                        "S": "ce-e8a41a52-6ff6-48f0-9872-889c87b093b7"
+                    },
+                    "rorid": {
+                        "S": "042nb2s44"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:web:twotr.testschool.edu"
+                    },
+                    "organization_name": {
+                        "S": "TwoTraining Nursing School"
+                    },
+                    "logo_uri": {
+                        "S": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAErSURBVEhLY3wro8JAS8AEpWkGRi0gCEYtIAgGiQV/vs54/8TjyR1hMPJ49WrPH6gMQUA4J9//8sTkww8I25SN4/QvCJujVUImgwXMxAsI++DubxBpKiB5RkZlh5jMWxn5ldxAgR/Vn7+CJAgBosqi+38YFJEd++eDx4s3p9lEzogJKEKFcAKi4gDFdBIBWanoz6/TUBZhQI4Fe75/ApKmXNwEwwcISLfgz4ceUOzylfCwQgTwAxIt+PO1CBi9DAzxImIuUCECgBQLQInn+UJQkpXv44CKEQTEWnD/xytQ0mTgiBeR30Fc4EAAEfkAGCzvni/8xcDAxtcqJEZM7kUGJBUVHKZsYBoGtLjE+wj5hqRI/gEsiJDRNag4PjDabCEIRi0gCEYtIAAYGACdDWh34SOxkgAAAABJRU5ErkJggg=="
+                    },
+                    "homepage_uri": {
+                        "S": "https://twotraining.com"
+                    },
+                    "legal_name": {
+                        "S": "TwoTraining Nursing School"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+                    },
+                    "organization_name": {
+                        "S": "ThreeTech College"
+                    },
+                    "logo_uri": {
+                        "S": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAFfSURBVEhLY5x58xUDLQETlKYZGLWAIBi1gCAYKRY8vH+lzqtTXSwdgiK8lhy6D5UiBIiw4FBJp5v55JVn7gHZhiZKQPL8mcOp5p0LibKDKB8AjVYKX95889XMFdvKb75qrjIBCW7fRUwpRoQFdj0zd50sb3IWg/IZxBz8Qf4gDhAXB/KKUAYEPLwNCi41FbiVeABxFiCDh3uXpC5iYDAJS3aGiuAFxFtw/8qhmXvrvNLdIp8axuXu2uYsD5XAD4i24NDUyam1q1aeATLvMVy78JDYZEpqjXb/1cN7u8ojD59nYAhfPrOJcCiRGgeKYvLOMSuW2wKZK3v3PoQI4gOkRzIIKEkaQlkEATEW3EcNxPtXFmavAgYRg5Y4EfFMRBwcKkkHp0slsKvvnQfFMxAoVZ0sj0fNH9gAYR+8YlBVMgSWDWeARoNNB9oETKZEmQ4Eo+0igmDUAoJgqFvAwAAABVpxX1PNHaUAAAAASUVORK5CYII="
+                    },
+                    "homepage_uri": {
+                        "S": "https://threetech.com"
+                    },
+                    "legal_name": {
+                        "S": "ThreeTech College"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:key:z6MkjoriXdbyWD25YXTed114F8hdJrLXQ567xxPHAUKxpKkS"
+                    },
+                    "organization_name": {
+                        "S": "DCC issuer-registry-client OIDF did:key test"
+                    },
+                    "logo_uri": {
+                        "S": "https://digitalcredentials.mit.edu/images/DCC_navbar-logo.png"
+                    },
+                    "homepage_uri": {
+                        "S": "https://dcconsortium.org"
+                    },
+                    "legal_name": {
+                        "S": "DCC issuer-registry-client OIDF did:key test"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "sub_name": {
+                        "S": "did:web:digitalcredentials.github.io:dcc-did-web:issuer-registry-client-test"
+                    },
+                    "organization_name": {
+                        "S": "DCC issuer-registry-client OIDF did:web test"
+                    },
+                    "logo_uri": {
+                        "S": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAB4SURBVEhLY1Da6ENTNGoBQTRqAUE0Yixwkq3X5tNgAANBkRlosvgQERbM0OaAmAwFNLFAkMNdW2KGkwjIE1S3AIFGLSCIRi0giEYtwIHq5Tk0BCEIaDwIwLh89RiKMRBRFkDNxQBUsoAyNGoBQTRqAUE01C3Y6AMAsDxJowXOs6oAAAAASUVORK5CYII="
+                    },
+                    "homepage_uri": {
+                        "S": "https://dcconsortium.org"
+                    },
+                    "legal_name": {
+                        "S": "DCC issuer-registry-client OIDF did:web test"
+                    }
+                }
+            }
+        }
+    ],
+    "dcc-oidf-t-db-registry-public-keys": [
+        {
+            "PutRequest": {
+                "Item": {
+                    "key_id": {
+                        "S": "issuerregistry-key1"
+                    },
+                    "jwks_kty": {
+                        "S": "EC"
+                    },
+                    "jwks_curve": {
+                        "S": "P-256"
+                    },
+                    "jwt_alg": {
+                        "S": "ES256"
+                    },
+                    "pub_key": {
+                        "S": "{\"x\":\"Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs\",\"y\":\"J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY\"}"
+                    }
+                }
+            }
+        }
+    ]
+}
