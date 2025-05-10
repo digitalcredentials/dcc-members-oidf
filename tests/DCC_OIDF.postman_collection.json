@@ -754,9 +754,6 @@
 								"exec": [
 									"pm.test(\"Invalid route\", function () {\r",
 									"    pm.response.to.have.status(404);\r",
-									"    const responseJson = pm.response.json();\r",
-									"    pm.expect(responseJson.error).to.eql(\"not_found\");\r",
-									"    pm.expect(responseJson.error_description).to.eql(\"The requested route cannot be found.\");\r",
 									"});"
 								],
 								"type": "text/javascript",

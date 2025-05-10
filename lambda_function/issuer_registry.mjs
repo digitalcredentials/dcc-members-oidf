@@ -404,10 +404,18 @@ if (!USE_DYNAMODB) {
             res.status(response.statusCode).set(response.headers || {}).send(response.body);
         } catch (error) {
             console.error("Error processing request:", error);
-            res.status(500).json({
-                error: "server_error",
-                error_description: "The server encountered an error while processing the request."
-            });
+            // Only return 500 for actual server errors, not for 404s
+            if (error.statusCode === 404) {
+                res.status(404).json({
+                    error: "not_found",
+                    error_description: "The requested route cannot be found."
+                });
+            } else {
+                res.status(500).json({
+                    error: "server_error",
+                    error_description: "The server encountered an error while processing the request."
+                });
+            }
         }
     });
 

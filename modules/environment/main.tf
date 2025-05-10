@@ -235,13 +235,6 @@ resource "aws_apigatewayv2_route" "issuer_registry_fetch" {
   target    = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
 }
 
-# Default route for handling unmatched routes
-resource "aws_apigatewayv2_route" "default" {
-  api_id    = aws_apigatewayv2_api.issuer_registry.id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
-}
-
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "api_distribution" {
   enabled             = true
