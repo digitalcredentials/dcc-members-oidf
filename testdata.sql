@@ -9,13 +9,7 @@ VALUES
     ('did:web:digitalcredentials.github.io:dcc-did-web:issuer-registry-client-test', 'DCC issuer-registry-client OIDF did:web test', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAB4SURBVEhLY1Da6ENTNGoBQTRqAUE0Yixwkq3X5tNgAANBkRlosvgQERbM0OaAmAwFNLFAkMNdW2KGkwjIE1S3AIFGLSCIRi0giEYtwIHq5Tk0BCEIaDwIwLh89RiKMRBRFkDNxQBUsoAyNGoBQTRqAUE01C3Y6AMAsDxJowXOs6oAAAAASUVORK5CYII=', 'https://dcconsortium.org', 'DCC issuer-registry-client OIDF did:web test', NULL, NULL);
 
 -- Insert into registry-public-keys
-INSERT INTO "registry-public-keys" (key_id, jwks_kty, jwks_curve, jwt_alg, pub_key)
+INSERT INTO "registry-public-keys" (key_id, jwks_kty, jwks_curve, jwt_alg, pub_key, private_key)
 VALUES 
-    ('issuerregistry-key1', 'EC', 'P-256', 'ES256', '{"x":"Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs","y":"J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY"}');
-    -- ('issuerregistry-key2', 'ED', 'Ed25519', 'EdDSA', '{"x":"aaa"}');
-
--- Insert into registry_private_keys
--- INSERT INTO registry_private_keys (key_id, priv_key)
--- VALUES 
-    -- ('issuerregistry-key1', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
-    -- ('issuerregistry-key2', 'aaa');
+    ('issuerregistry-key1', 'EC', 'P-256', 'ES256', '{"x":"Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs","y":"J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY"}', 'nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA');
+ 

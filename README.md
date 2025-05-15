@@ -42,8 +42,8 @@ test.registry.dcconsortium.org
 1. On local, update `schema.sql` and `testdata.sql`
 2. On test and prod AWS, update `aws_dynamodb_table items` in `main.tf`
 3. `aws configure` and add in the correct AWS IAM information for the service account
-4. `terraform plan` (if fails, run `terraform init`)
-5. `terraform apply`
+4. `terraform plan "-target=module.test"` (if fails, run `terraform init`)
+5. `terraform apply "-target=module.test"`
 6. Re-run the above section "How to push the latest test database to AWS"
 
 ## Other tools used:

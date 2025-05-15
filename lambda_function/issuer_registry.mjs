@@ -9,11 +9,23 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
-const THIS_URL = "https://test.registry.dcconsortium.org"; // For determining internal path for fetch statement (before issuers subfolder)
-const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)";
+// Set constants based on environment
+const THIS_URL = IS_TEST_OR_PROD === "t" 
+    ? "https://test.registry.dcconsortium.org"
+    : "https://registry.dcconsortium.org";
+
+const THIS_ORGANIZATION_NAME = IS_TEST_OR_PROD === "t"
+    ? "Digital Credentials Consortium (TEST)"
+    : "Digital Credentials Consortium";
+
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
-const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
-const THIS_ORGANIZATION_POLICY_URI = "https://test.registry.dcconsortium.org/governance-policy";
+
+const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9dJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
+
+const THIS_ORGANIZATION_POLICY_URI = IS_TEST_OR_PROD === "t"
+    ? "https://test.registry.dcconsortium.org/governance-policy"
+    : "https://registry.dcconsortium.org/governance-policy";
+
 const THIS_ORGANIZATION_LEGAL_NAME = "Digital Credentials Consortium";
 
 import { SignJWT } from 'jose';
@@ -26,7 +38,7 @@ import fs from 'fs';
 async function generateEntityStatement(sub) {
     console.log("in generateEntityStatement");
     const isTrustAnchor = sub === THIS_URL;
-    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry-public-keys`;
+    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM "registry-public-keys"`;
 
     const entityStatement = {
         sub: sub,
@@ -205,7 +217,7 @@ async function signEntityStatement(entityStatement) {
     } else {
         console.log("in sqlite");
         publicKeyData = await new Promise((resolve, reject) => {
-            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry-public-keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
+            db.get(`SELECT jwks_kty, jwks_curve, pub_key, key_id, private_key FROM "registry-public-keys" WHERE key_id = ?`, ["issuerregistry-key1"], (err, row) => {
                 if (err) reject(err);
                 else resolve(row);
             });
@@ -221,7 +233,7 @@ async function signEntityStatement(entityStatement) {
         kid: publicKeyData.key_id,
         x: pub.x,
         y: pub.y,
-        d: ISSUER_REGISTRY_SECRET_KEY
+        d: publicKeyData.private_key
     };
     console.log(signingJWK);
     
