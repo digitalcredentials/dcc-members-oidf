@@ -130,6 +130,9 @@
                     },
                     "pub_key": {
                         "S": "{\"x\":\"Rz1NHMJ_tAZQXsJOYqnYruGYimG6WNOp0N234E7wqOs\",\"y\":\"J5iCLb2T_ysCHpjFzcR3iW-tuDuXEHnJPvfVMQZOfzY\"}"
+                    },
+                    "private_key": {
+                        "S": "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA"
                     }
                 }
             }

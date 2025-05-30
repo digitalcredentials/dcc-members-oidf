@@ -9,12 +9,24 @@ const dynamoClient = USE_DYNAMODB ? new DynamoDBClient({}) : null;
 
 const ISSUER_REGISTRY_SECRET_KEY = "nHeosZap6ZDGYRcdaYqW264jOzRZkaxkUJp4syMnljA";
 
-const THIS_URL = "https://test.registry.dcconsortium.org"; // For determining internal path for fetch statement (before issuers subfolder)
-const THIS_ORGANIZATION_NAME = "Digital Credentials Consortium (TEST)";
+// Set constants based on environment
+const THIS_URL = IS_TEST_OR_PROD === "t" 
+    ? "https://test.registry.dcconsortium.org"
+    : "https://registry.dcconsortium.org";
+
+const THIS_ORGANIZATION_NAME = IS_TEST_OR_PROD === "t"
+    ? "Digital Credentials Consortium (TEST)"
+    : "Digital Credentials Consortium";
+
 const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
-const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9VJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
-const THIS_ORGANIZATION_POLICY_URI = "https://test.registry.dcconsortium.org/governance-policy";
-const THIS_ORGANIZATION_LEGAL_NAME = "Digital Credentials Consortium, Inc.";
+
+const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9dJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
+
+const THIS_ORGANIZATION_POLICY_URI = IS_TEST_OR_PROD === "t"
+    ? "https://test.registry.dcconsortium.org/governance-policy"
+    : "https://registry.dcconsortium.org/governance-policy";
+
+const THIS_ORGANIZATION_LEGAL_NAME = "Digital Credentials Consortium";
 
 import { SignJWT } from 'jose';
 
@@ -26,7 +38,7 @@ import fs from 'fs';
 async function generateEntityStatement(sub) {
     console.log("in generateEntityStatement");
     const isTrustAnchor = sub === THIS_URL;
-    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM registry-public-keys`;
+    const queryTrustAnchorKeys = `SELECT key_id, jwks_kty, jwks_curve, jwt_alg, pub_key FROM "registry-public-keys"`;
 
     const entityStatement = {
         sub: sub,
@@ -106,7 +118,10 @@ async function generateEntityStatement(sub) {
             };
             const result = await dynamoClient.send(new ScanCommand(params));
             if (!result.Items || result.Items.length === 0) {
-                return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
+                return { statusCode: 404, body: JSON.stringify({
+                    error: "not_found",
+                    error_description: "The requested Entity Identifier cannot be found."
+                }) };
             }
             const item = result.Items[0];
             entityStatement.metadata.federation_entity.organization_name = item.organization_name.S;
@@ -142,7 +157,12 @@ async function generateEntityStatement(sub) {
                 });
             });
             if (!issuer) {
-                return { statusCode: 404, body: JSON.stringify({ error: "Issuer not found" }) };
+                return {
+                    statusCode: 404, body: JSON.stringify({
+                        error: "not_found",
+                        error_description: "The requested Entity Identifier cannot be found."
+                    })
+                };
             }
 
             entityStatement.metadata.federation_entity.organization_name = issuer.organization_name;
@@ -197,7 +217,7 @@ async function signEntityStatement(entityStatement) {
     } else {
         console.log("in sqlite");
         publicKeyData = await new Promise((resolve, reject) => {
-            db.get("SELECT jwks_kty, jwks_curve, pub_key, key_id FROM registry-public-keys WHERE key_id = ?", ["issuerregistry-key1"], (err, row) => {
+            db.get(`SELECT jwks_kty, jwks_curve, pub_key, key_id, private_key FROM "registry-public-keys" WHERE key_id = ?`, ["issuerregistry-key1"], (err, row) => {
                 if (err) reject(err);
                 else resolve(row);
             });
@@ -213,7 +233,7 @@ async function signEntityStatement(entityStatement) {
         kid: publicKeyData.key_id,
         x: pub.x,
         y: pub.y,
-        d: ISSUER_REGISTRY_SECRET_KEY
+        d: publicKeyData.private_key
     };
     console.log(signingJWK);
     
@@ -285,7 +305,10 @@ export async function lambdaHandler(event) {
                     db.all("SELECT sub_name FROM issuers", [], (err, rows) => {
                         if (err) {
                             console.error("Error executing query:", err.message);
-                            resolve({ statusCode: 500, body: JSON.stringify({ error: "Database query failed" }) });
+                            resolve({ statusCode: 500, body: JSON.stringify({
+                                error: "server_error",
+                                error_description: "The server encountered an error: database query failed."
+                            }) });
                         } else {
                             const subNames = rows.map((row) => row.sub_name);
                             resolve({ statusCode: 200, body: JSON.stringify(subNames) });
@@ -295,7 +318,12 @@ export async function lambdaHandler(event) {
             }
         } catch (error) {
             console.error("Error:", error.message);
-            return { statusCode: 500, body: JSON.stringify({ error: "Failed to process request" }) };
+            return {
+                statusCode: 500, body: JSON.stringify({
+                    error: "server_error",
+                    error_description: "The server encountered an error while processing the request."
+                })
+            };
         }
     } else if (routeKey == `GET /.well-known/openid-federation`) {
         try {
@@ -310,13 +338,34 @@ export async function lambdaHandler(event) {
             };
         } catch (error) {
             console.error("Error:", error.message);
-            return { statusCode: 500, body: JSON.stringify({ error: "Failed to process request" }) };
+            return {
+                statusCode: 500, body: JSON.stringify({
+                    error: "server_error",
+                    error_description: "The server encountered an error while processing the request."
+                })
+            };
         }
     } else if (routeKey == `GET /fetch`) {
         const subValue = event.queryStringParameters?.sub;
         if (!subValue) {
-            return { statusCode: 400, body: JSON.stringify({ error: "Missing sub parameter" }) };
+            return {
+                statusCode: 400, body: JSON.stringify({
+                    error: "invalid_request",
+                    error_description: "Required request parameter [sub] was missing."
+                }) };
         }
+
+        // Check for extra parameters
+        const allowedParams = ['sub'];
+        const extraParams = Object.keys(event.queryStringParameters || {}).filter(param => !allowedParams.includes(param));
+        if (extraParams.length > 0) {
+            return {
+                statusCode: 400, body: JSON.stringify({
+                    error: "unsupported_parameter",
+                    error_description: "The server does not support the requested parameter."
+                }) };
+        }
+
         try {
             const entityStatement = await generateEntityStatement(subValue);
             if (entityStatement.statusCode) { // If there is an error
@@ -330,10 +379,20 @@ export async function lambdaHandler(event) {
             };
         } catch (error) {
             console.error("Error:", error.message);
-            return { statusCode: 500, body: JSON.stringify({ error: "Failed to process request" }) };
+            return {
+                statusCode: 500, body: JSON.stringify({
+                    error: "server_error",
+                    error_description: "The server encountered an error while processing the request."
+                })
+            };
         }
     } else {
-        return { statusCode: 404, body: JSON.stringify({ error: "Route not found" }) };
+        return {
+            statusCode: 404, body: JSON.stringify({
+                error: "not_found",
+                error_description: "The requested route cannot be found."
+            })
+        };
     }
 };
 
@@ -357,7 +416,18 @@ if (!USE_DYNAMODB) {
             res.status(response.statusCode).set(response.headers || {}).send(response.body);
         } catch (error) {
             console.error("Error processing request:", error);
-            res.status(500).json({ error: "Internal Server Error" });
+            // Only return 500 for actual server errors, not for 404s
+            if (error.statusCode === 404) {
+                res.status(404).json({
+                    error: "not_found",
+                    error_description: "The requested route cannot be found."
+                });
+            } else {
+                res.status(500).json({
+                    error: "server_error",
+                    error_description: "The server encountered an error while processing the request."
+                });
+            }
         }
     });
 

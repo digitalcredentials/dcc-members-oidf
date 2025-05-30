@@ -11,19 +11,13 @@ CREATE TABLE issuers (
 );
 
 -- Table for all trust registry public keys. At the moment, only supports ECC P-256.
-CREATE TABLE registry-public-keys (
+CREATE TABLE "registry-public-keys" (
     key_id TEXT PRIMARY KEY,
     jwks_kty TEXT NOT NULL,
     jwks_curve TEXT NOT NULL,
     jwt_alg TEXT NOT NULL,
-    pub_key TEXT NOT NULL
-);
-
--- Table for all trust registry private keys
-CREATE TABLE registry_private_keys (
-    key_id TEXT PRIMARY KEY,
-    priv_key TEXT NOT NULL,
-    FOREIGN KEY (key_id) REFERENCES registry-public-keys(key_id)
+    pub_key TEXT NOT NULL,
+    private_key TEXT NOT NULL
 );
 
 PRAGMA foreign_keys = ON;
