@@ -23,8 +23,8 @@ const THIS_ORGANIZATION_HOMEPAGE_URI = "https://digitalcredentials.mit.edu";
 const THIS_ORGANIZATION_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAACqSURBVEhL7ZFbCoRADAQ9wV7JX6++4J00kCWORXbM6Ci+oL4m3V2ITdv1u3IywfD9CHjMUyDQ9dJHVJCuKwj84yECTBuIudxbgLkMKKZMAnQ2YrM/Ac5VOFZQ3WGzs5+M0GrSzZlAQHQFGKRAQKEITAmOQEFzEdSNV2CgblQTCFhQfAGaQTCinEwQuQJHgJqCjICAgowQ+gJcjUhsQYB3l3zYF1Tk6oKuHwG5IBiIz7bx+QAAAABJRU5ErkJggg==";
 
 const THIS_ORGANIZATION_POLICY_URI = IS_TEST_OR_PROD === "t"
-    ? "https://test.registry.dcconsortium.org/governance-policy"
-    : "https://registry.dcconsortium.org/governance-policy";
+    ? "https://digitalcredentials.mit.edu/dcc-members-registry-governance"
+    : "https://digitalcredentials.mit.edu/dcc-members-registry-governance";
 
 const THIS_ORGANIZATION_LEGAL_NAME = "Digital Credentials Consortium";
 
