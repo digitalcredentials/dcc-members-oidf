@@ -32,17 +32,17 @@ jobs:
         run: npm run builddb
 
       - name: Load test data
-        run: npm run loadtestdata
+        run: npm run localtestdata
 
       - name: Start App
-        run: node index.js &
+        run: node ./lambda_function/issuer_registry.mjs &
         env:
           NODE_ENV: production
 
       - name: Wait for App to Start
         run: |
           for i in {1..30}; do
-            if curl --silent --fail -k https://localhost:3000/issuer-registry/.well-known/openid-federation; then
+            if curl --silent --fail -k https://localhost:3000/.well-known/openid-federation; then
               echo "App is up and running!"
               exit 0
             fi
