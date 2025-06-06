@@ -32,10 +32,10 @@ jobs:
         run: npm run builddb
 
       - name: Load test data
-        run: npm run loadtestdata
+        run: npm run localtestdata
 
       - name: Start App
-        run: node index.js &
+        run: node ./lambda_function/issuer_registry.mjs &
         env:
           NODE_ENV: production
 
