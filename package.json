@@ -6,7 +6,7 @@
   "scripts": {
     "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\" || echo 'OpenSSL not found, install it manually'",
     "builddb": "npx rimraf issuerreg.db && sqlite3 issuerreg.db < schema.sql",
-    "localtestdata": "sqlite3 issuerreg.db \"PRAGMA foreign_keys = OFF; BEGIN TRANSACTION; SELECT 'DELETE FROM ' || name || ';' FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';\" | sqlite3 issuerreg.db && sqlite3 issuerreg.db \"PRAGMA foreign_keys = ON;\" && sqlite3 issuerreg.db < testdata.sql",
+    "localtestdata": "sqlite3 issuerreg.db \"PRAGMA foreign_keys = OFF; BEGIN TRANSACTION; SELECT 'DELETE FROM \"' || name || '\";' FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';\" | sqlite3 issuerreg.db && sqlite3 issuerreg.db \"PRAGMA foreign_keys = ON;\" && sqlite3 issuerreg.db < testdata.sql",
     "remotebuild": "terraform apply",
     "remotetestdata": "python ./convert.py && aws dynamodb batch-write-item --request-items file://testdata.json",
     "remotedestroy": "terraform destroy",
