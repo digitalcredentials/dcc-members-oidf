@@ -86,7 +86,7 @@ Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of
 ## How to push the latest test database data to AWS:
 
 1. Potentially run `aws dynamodb delete-table --table-name dcc-oidf-t-db-registry-public-keys; aws dynamodb delete-table --table-name db-issuer_public_keys; aws dynamodb delete-table --table-name dcc-oidf-t-db-issuers`, which will wipe the DynamoDB tables
-2. Potentially run `terraform apply` to recreate tables
+2. Potentially run `terraform apply "-target=module.test"` to recreate tables
 3. Run `python ./convert.py`, which will convert `testdata.sql` (suitable for SQLlite) into `testdata.json` (suitable for DynamoDB)
 4. Run `aws dynamodb batch-write-item --request-items file://testdata.json`, which will load that data into AWS
 
@@ -94,11 +94,10 @@ Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of
 ## How to update the test database schema:
 
 1. On local, update `schema.sql` and `testdata.sql`
-2. On test and prod AWS, update `aws_dynamodb_table items` in `main.tf`
-3. `aws configure` and add in the correct AWS IAM information for the service account
-4. `terraform plan "-target=module.test"` (if fails, run `terraform init`)
-5. `terraform apply "-target=module.test"`
-6. Re-run the above section "How to push the latest test database to AWS"
+2. `aws configure` and add in the correct AWS IAM information for the service account
+3. `terraform plan "-target=module.test"`
+4. `terraform apply "-target=module.test"`
+5. Re-run the above section "How to push the latest test database to AWS"
 
 
 ## Other tools used:
