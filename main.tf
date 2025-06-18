@@ -5,6 +5,12 @@ terraform {
       version = "~> 5.0" # Ensures compatibility with AWS provider version 5.x
     }
   }
+  backend "s3" {
+    		bucket = "dcc-oidf-tfstate"
+    		key    = "state/terraform.tfstate"
+    		region = "us-east-1"
+    		use_lockfile = true
+  		}
 }
 
 provider "aws" {
