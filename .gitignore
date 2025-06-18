@@ -5,3 +5,5 @@ server.key
 *.zip
 *.tfstate
 *.tfstate.*
+.DS_Store
+issuerreg.db
