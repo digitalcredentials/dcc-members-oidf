@@ -3,16 +3,6 @@ output "function_name" {
   value = module.test.lambda_function_name
 }
 
-output "environment_table_name" {
-  description = "Name of the environment DynamoDB table"
-  value = module.test.dynamodb_table_name
-}
-
-output "environment_table_arn" {
-  description = "ARN of the environment DynamoDB table"
-  value = module.test.dynamodb_table_arn
-}
-
 output "cloudfront_gateway_cname_test" {
   value = module.test.cloudfront_domain_name
   description = "The CloudFront distribution domain name"
