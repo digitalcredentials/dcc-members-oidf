@@ -103,31 +103,6 @@ resource "aws_iam_role_policy_attachment" "lambda_secretsmanager" {
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 }
 
-# DynamoDB Tables
-resource "aws_dynamodb_table" "issuers" {
-  name         = "${local.env_prefix}-db-issuers"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key = "sub_name"
-
-  attribute {
-    name = "sub_name"
-    type = "S"
-  }
-}
-
-resource "aws_dynamodb_table" "registry_public_keys" {
-  name         = "${local.env_prefix}-db-registry-public-keys"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key = "key_id"
-
-  attribute {
-    name = "key_id"
-    type = "S"
-  }
-}
-
 # API Gateway
 resource "aws_apigatewayv2_api" "issuer_registry" {
   name          = "${local.env_prefix}-api-issuer-registry"
