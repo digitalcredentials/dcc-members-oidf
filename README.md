@@ -254,12 +254,10 @@ Push new code to prod only: `terraform apply "-target=module.production"`
 `npm run localtestdata`
 `npm run webservice`
 
-#### Key commands for local testing:
+NOTE: You may need to generate local server cert (HTTPS): `npm run keygen`
 
-1. Create/recreate DB schema: `npm run builddb`
-2. Load/reload test data into DB: `npm run localtestdata`
-3. Generate local server cert (HTTPS): `npm run keygen`
-4. Launch webservice: `npm run webservice`
+NOTE: when running 'webservice' on a Mac, you may get errors about the sqlite3 binaries, which I was able to fix on my Mac with 'brew install python-setuptools' which is apparently not installed by default on a mac (i.e, pyton-setuptools) but seemingly is on windows.
+
 5. Test endpoint(s): `curl -X GET http://localhost:3000/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests. (Install `newman` to run these tests in headless mode.)
 
 
