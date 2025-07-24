@@ -154,9 +154,9 @@ or however you like to clone
 
 Then:
 
-'npm i'
+`npm i`
 
-and **IMPORTANTLY** YOU MUST ALSO RUN 'NPM I' IN THE 'lambda_function' directory to get the npm packages installed there, BEFORE
+and **IMPORTANTLY** YOU MUST ALSO RUN `npm i` IN THE 'lambda_function' directory to get the npm packages installed there, BEFORE
 you try to deploy a new verson of the lambda to AWS.
 
 ### Initialize terraform
@@ -241,12 +241,25 @@ When deploying to production confirm access with:
 
 Then run:
 
-`terraform plan`. You should have 2 or 4 components ready to redeploy (code zips and potentially lambda functions).
+`terraform plan`
 
-Push new code to test only: `terraform apply "-target=module.test"`
-Push new code to prod only: `terraform apply "-target=module.production"`
-(Rarely used): push new SSL certs: `terraform apply "-target=module.certificates"` 
-(Do not use unless you want to update test and prod simultaneously): `terraform apply "-target=module.certificates"`
+You should have 2 or 4 components ready to redeploy (code zips and potentially lambda functions).
+
+Push new code to test only: 
+
+`terraform apply "-target=module.test"`
+
+Push new code to prod only: 
+
+`terraform apply "-target=module.production"`
+
+(Rarely used): push new SSL certs: 
+
+`terraform apply "-target=module.certificates"` 
+
+(Do not use unless you want to update test and prod simultaneously): 
+
+`terraform apply "-target=module.certificates"`
 
 ### Testing locally (using SQLite):
 
@@ -258,19 +271,22 @@ NOTE: You may need to generate local server cert (HTTPS): `npm run keygen`
 
 NOTE: when running 'webservice' on a Mac, you may get errors about the sqlite3 binaries, which I was able to fix on my Mac with 'brew install python-setuptools' which is apparently not installed by default on a mac (i.e, pyton-setuptools) but seemingly is on windows.
 
-5. Test endpoint(s): `curl -X GET http://localhost:3000/.well-known/openid-federation` e.g. `curl -X GET https://localhost:3000/.well-known/openid-federation`. Also see `tests/DCC_OIDF.postman_collection.json` for a suite of Postman tests. (Install `newman` to run these tests in headless mode.)
+You can test the endpoints manually:
 
+* `curl https://localhost:3000/.well-known/openid-federation`
+* `curl 'https://localhost:3000/subordinate_listing'`
+* `curl 'https://localhost:3000/fetch?sub=did%3Aweb%3Aoneuni.testuni.edu'`
+
+### Running Postman tests
+
+Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of TEST_URL can be changed to test alternatively `https://localhost:3000` (local) or `https://test.registry.dcconsortium.org` (AWS Test) if you want to test both options. Use the Import and right-click > Export functionality in Postman to load and export new tests. 
+
+![Tests Background](./tests_background.png)
 
 ## Ancillary scripts:
 
 - Generate a sample set of ECDSA private and public keys: `./scripts/generate_ecdsa_keys.sh`
 - Check to see if a sample set of ECDSA private and public keys are valid: `python3 ./test.py privatekey x y`
-
-## Running tests:
-
-Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of TEST_URL can be changed to test alternatively `https://localhost:3000` (local) or `https://test.registry.dcconsortium.org` (AWS Test) if you want to test both options. Use the Import and right-click > Export functionality in Postman to load and export new tests. 
-
-![Tests Background](./tests_background.png)
 
 
 ## Other tools used:
