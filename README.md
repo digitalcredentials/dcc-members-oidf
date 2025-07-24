@@ -2,7 +2,7 @@
 
 ![status badge](https://github.com/digitalcredentials/dcc-members-oidf/actions/workflows/apitests.yml/badge.svg)
 
-## Description:
+## Description
 
 A pilot implementation of an issuer identity registry for identifying the issuers of learning and employment credentials, using a version of the [OpenID Federation](https://openid.net/specs/openid-federation-1_0.html) specification.
 
@@ -11,6 +11,7 @@ NOTE that this implementation doesn't explicitly follow the OIDF specification a
 This implementation implements three endpoints from the OIDF specification:
 
 #### GET /.well-known/openid-federation
+
 Returns metadata about the registry, encoded as a JWT, which decoded looks like so:
 
 ```json
@@ -281,7 +282,20 @@ NOTE: the -k switch tells curl to skip SSL verification, otherwise curl might er
 
 ### Running Postman tests
 
-Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of TEST_URL can be changed to test alternatively `https://localhost:3000` (local) or `https://test.registry.dcconsortium.org` (AWS Test) if you want to test both options. Use the Import and right-click > Export functionality in Postman to load and export new tests. 
+Postman tests are in `tests/DCC_OIDF.postman_collection.json`
+
+To run the tests:
+
+`newman run tests/DCC_OIDF.postman_collection.json --insecure`
+
+There is a TEST_URL variable in the `tests/DCC_OIDF.postman_collection.json` file that can be changed to either:
+
+ * `https://localhost:3000` (to test locally)
+ * `https://test.registry.dcconsortium.org` (to test AWS deployment) 
+
+NOTE: the `--insecure` flag is needed on the localhost tests to tell newman to ignore self-signed errors
+
+Use the Import and right-click > Export functionality in Postman to load and export new tests. 
 
 ![Tests Background](./tests_background.png)
 
@@ -289,7 +303,6 @@ Tests are run via `tests/DCC_OIDF.postman_collection.json`. The Current value of
 
 - Generate a sample set of ECDSA private and public keys: `./scripts/generate_ecdsa_keys.sh`
 - Check to see if a sample set of ECDSA private and public keys are valid: `python3 ./test.py privatekey x y`
-
 
 ## Other tools used:
 
