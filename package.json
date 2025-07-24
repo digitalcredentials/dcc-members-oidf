@@ -4,11 +4,11 @@
   "description": "## Description:",
   "main": "./lambda_function/issuer_registry.mjs",
   "scripts": {
-    "keygen": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\" || echo 'OpenSSL not found, install it manually'",
-    "builddb": "rm issuerreg.db; sqlite3 issuerreg.db < schema.sql",
-    "localtestdata": "npm run builddb; sqlite3 issuerreg.db < testdata.sql",
-    "remotetestdata": "python ./convert.py && aws dynamodb batch-write-item --request-items file://testdata.json",
-    "webservice": "node ./lambda_function/issuer_registry.mjs"
+    "generate-local-https-certs": "openssl req -nodes -new -x509 -keyout server.key -out server.crt -subj \"/CN=example.com/O=/C=US\" || echo 'OpenSSL not found, install it manually'",
+    "build-local-db": "rm issuerreg.db; sqlite3 issuerreg.db < schema.sql",
+    "load-local-test-data": "npm run builddb; sqlite3 issuerreg.db < testdata.sql",
+    "load-remote-test-data": "python ./convert.py && aws dynamodb batch-write-item --request-items file://testdata.json",
+    "start-local-web-service": "node ./lambda_function/issuer_registry.mjs"
   },
   "keywords": [],
   "author": "",
