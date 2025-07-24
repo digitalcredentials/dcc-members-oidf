@@ -222,7 +222,21 @@ Again, one for production and one for test. Both need a partition key called key
 
 ##### Sample data
 
-All values are strings (TEXT). See `./schema.sql` for the columns which are used in each table (issuers and registry info) and `./testdata.sql` for sample data. If you need to fill a database from scratch, you can use all of the values from `aws dynamodb batch-write-item --request-items file://testdata.json` or fill them by hand by reading them off from `./schema.sql`.
+All values are strings (TEXT). 
+
+See `./schema.sql` for the columns which are used in each table (issuers and registry info) and `./testdata.sql` for sample data. 
+
+To populate your AWS dynammo dbs with test data, first convert the testdata.sql to the dynamo format:
+
+python ./convert.py
+
+and then use the aws cli to send it up to your dynamo tables on AWS:
+
+aws dynamodb batch-write-item --request-items file://testdata.json
+
+NOTE: the commands in testdata.json file only create data for the test instances of the dynamo tables on AWS, not for production.
+
+You can alternatively add data manually through the dynamo ui on AWS, using the data in `./schema.sql` or your own.
 
 ### Updating code on an existing registry instance:
 
