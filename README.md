@@ -96,7 +96,7 @@ Returns a listing of all DIDs in the registry as a plain json list (not encoded 
 
 The rest of this README describes:
 
-- how the DCC instance of this registry was set up on AWS as an AWS lambda function, and so how someone might set up their own instance that way
+- how the DCC instance of this registry was set up on AWS as an AWS lambda function, and so therefore how someone might set up their own instance with AWS lambda
 - how a new developer can set up their local development environment to contribute code and deploy it to the running DCC instance
 
 ## Install/Setup
@@ -114,13 +114,13 @@ Note that there are also dynamo db tables, which were intially setup with terraf
 
 Similarly, the terraform state file had been local, but is now remote ("backend") and hosted in an s3 bucket, to make it easier to share terraform state between developers. The s3 bucket is not provisioned by terraform, again to avoid any chance of terraform overwriting it, so you'll have to create it yourself. We discuss the remote and local options further below.
 
-Backups of the dynamo tables were also added in an additional s3 bucket, which again was not provisioned by terraform to avoid possible terraform overwrites.
+Backups of the dynamo tables were also added in an additional s3 bucket, which again was not provisioned by terraform to avoid possible terraform overwrites. When you setup your dynamo tables, AWS will usually prompt you to also enable backup.
 
 Next up we'll cover:
 
 * Installing the AWS CLI
 * Installing Terraform
-* Cloning this repository
+* Cloning and initializing this repository
 * Initializing Terraform locally
 * Setting up your Databases
 * Invoking Terraform to provision Lambda and its S3 bucket, Cloudfront, Cloudwatch, and the API Gateway
@@ -135,7 +135,7 @@ Setting up the AWS CLI is simple enough - follow the AWS instructions to install
 
 You'll also need AWS credentials, which the CLI uses when making calls to AWS.
 
-To set up our pilot we used this method, which isn't the most secure method, but appropriate for our proof of concept.
+To set up our pilot we used this method, which isn't the most secure method, but easiest for our proof of concept.
 
 [https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html)
 
@@ -165,7 +165,7 @@ you try to deploy a new verson of the lambda to AWS.
 The terraform configuration in this repository uses the terraform *backend* to store the current state
 of the DCC terraform deployment in an S3 bucket, so it can be shared by all developers.
 
-You can do the same by creating an S3 bucket and 
+If you are setting up a brand new registry (running instance of this repository), you can do the same by creating an S3 bucket and 
 setting the *backend* property in [main.tf](./main.tf) to point to your new S3 bucket.
 
 Alternatively, you can remove the backend property from main.tf and terraform will track your state locally.
@@ -264,13 +264,15 @@ Push new code to prod only:
 
 ### Testing locally (using SQLite):
 
-`npm run builddb`, 
-`npm run localtestdata`
-`npm run webservice`
+`npm run build-local-db`, 
+`npm run load-local-test-data`
+`npm run start-local-web-service`
 
-NOTE: You may need to generate local server cert (HTTPS): `npm run keygen`
+NOTE: You may need to generate local server cert (HTTPS): 
 
-NOTE: when running 'webservice' on a Mac, you may get errors about the sqlite3 binaries, which I was able to fix on my Mac with 'brew install python-setuptools' which is apparently not installed by default on a mac (i.e, pyton-setuptools) but seemingly is on windows.
+`npm run generate-local-https-certs`
+
+NOTE: when running 'start-local-web-service' on a Mac, you may get errors about the sqlite3 binaries, which I was able to fix on my Mac with 'brew install python-setuptools' pyton-setuptools is apparently not installed by default on a mac, but seemingly is on windows.
 
 You can test the endpoints manually:
 
