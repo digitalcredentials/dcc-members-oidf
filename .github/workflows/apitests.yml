@@ -26,13 +26,13 @@ jobs:
         run: npm install
 
       - name: Keygen
-        run: npm run keygen
+        run: npm run generate-local-https-certs
 
       - name: Set up DB
-        run: npm run builddb
+        run: npm run build-local-db
 
       - name: Load test data
-        run: npm run localtestdata
+        run: npm run load-local-test-data
 
       - name: Start App
         run: node ./lambda_function/issuer_registry.mjs &
