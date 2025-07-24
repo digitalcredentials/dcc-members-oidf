@@ -161,11 +161,11 @@ you try to deploy a new verson of the lambda to AWS.
 
 ### Initialize terraform
 
-The terraform configuration in this repository uses the terraform 'backend' to store the current state
+The terraform configuration in this repository uses the terraform *backend* to store the current state
 of the DCC terraform deployment in an S3 bucket, so it can be shared by all developers.
 
 You can do the same by creating an S3 bucket and 
-setting the 'backend' property in [main.tf](./main.tf) to point to your new S3 bucket.
+setting the *backend* property in [main.tf](./main.tf) to point to your new S3 bucket.
 
 Alternatively, you can remove the backend property from main.tf and terraform will track your state locally.
 
@@ -273,9 +273,11 @@ NOTE: when running 'webservice' on a Mac, you may get errors about the sqlite3 b
 
 You can test the endpoints manually:
 
-* `curl https://localhost:3000/.well-known/openid-federation`
-* `curl 'https://localhost:3000/subordinate_listing'`
-* `curl 'https://localhost:3000/fetch?sub=did%3Aweb%3Aoneuni.testuni.edu'`
+* `curl -k https://localhost:3000/.well-known/openid-federation`
+* `curl -k https://localhost:3000/subordinate_listing`
+* `curl -k https://localhost:3000/fetch?sub=did%3Aweb%3Aoneuni.testuni.edu`
+
+NOTE: the -k switch tells curl to skip SSL verification, otherwise curl might error out with a self-signed cert error
 
 ### Running Postman tests
 
