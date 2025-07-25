@@ -311,6 +311,12 @@ There is a TEST_URL variable in the `tests/DCC_OIDF.postman_collection.json` fil
 
 NOTE: the `--insecure` flag is needed on the localhost tests to tell newman to ignore self-signed errors
 
+NOTE: you may get errors like `certificate has expired`
+
+If so, try re-generating the lcoal certificates:
+
+`npm run generate-local-https-certs`
+
 Use the Import and right-click > Export functionality in Postman to load and export new tests. 
 
 ![Tests Background](./tests_background.png)
