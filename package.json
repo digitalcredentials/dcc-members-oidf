@@ -19,8 +19,5 @@
     "jose": "^5.9.6",
     "newman": "^6.2.1",
     "sqlite3": "^5.1.7"
-  },
-  "devDependencies": {
-    "rimraf": "^5.0.1"
   }
 }
